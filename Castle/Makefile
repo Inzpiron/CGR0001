@@ -1,5 +1,5 @@
-CC=gcc
-IN=castle.c
+CC=g++
+IN=castle.cpp
 OUT=castle
 FLAGS=-lglut -lGL -lGLU -lm
 

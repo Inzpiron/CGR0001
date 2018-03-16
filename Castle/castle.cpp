@@ -1,137 +1,228 @@
-//gcc castle.c -lglut -lGL -lGLU -lm -o castle && ./castle
+// make
 #include <GL/freeglut.h>
 #include <GL/gl.h>
-#include <GL/glut.h>
 #include <math.h>
 #include <stdio.h>
+#include "am_3dShapes.hpp"
 
-void drawScene(void);
-void reshape(GLsizei width, GLsizei height);
 float angle = 0;
 float bob = 0;
 unsigned int count;
 
-
-        /* Como fazer um cubo
-        glBegin(GL_QUADS);
-            // Base
-            glVertex3f(-0.2,  0.0, -0.2);
-            glVertex3f(-0.2,  0.0,  0.2);
-            glVertex3f( 0.2,  0.0,  0.2);
-            glVertex3f( 0.2,  0.0, -0.2);
- 
-            // Lado 1
-            glVertex3f( 0.2,  0.0, -0.2);
-            glVertex3f( 0.2,  0.4, -0.2);
-            glVertex3f(-0.2,  0.4, -0.2);
-            glVertex3f(-0.2,  0.0, -0.2);
- 
-            // Lado 2 ...
-        glEnd();
-        */
-
-int main(int argc, char** argv) {
-	glutInit(&argc, argv);
-	glutInitDisplayMode(GLUT_RGB | GLUT_DOUBLE | GLUT_DEPTH );
-	glutInitWindowSize(800,600);
-	glutCreateWindow("Boneco de Neve");
-
-	glutDisplayFunc(drawScene);
-	glutIdleFunc(drawScene);
-	//glutReshapeFunc(reshape);
-
-	glMatrixMode(GL_PROJECTION);
-	glViewport(0, 0, 800, 600);
-	glMatrixMode(GL_PROJECTION);
-	glLoadIdentity();
-	GLfloat aspect = (GLfloat) 800 / 600;
-	gluPerspective(45, aspect, 2.0f, 15.0f);
-	glMatrixMode(GL_MODELVIEW);
-	glShadeModel( GL_SMOOTH );
-	glClearDepth( 1.0f );
-	glEnable( GL_DEPTH_TEST );
-	glDepthFunc( GL_LEQUAL );
-	glHint( GL_PERSPECTIVE_CORRECTION_HINT, GL_NICEST );
-	glClearColor(0.0, 0.0, 0.0, 1.0);
-
-	glutMainLoop();
-
-	return 0;
+void keyboard(unsigned char kb, int x, int y)
+{
+	switch(kb)
+	{
+		case 27: exit(0);
+		default: break;
+	}
 }
 
-void drawScene(void) {
+void display(void)
+{
+	glMatrixMode(GL_MODELVIEW);
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+	glClearColor(0.08, 0.4, 0.9, 1.0);
 	glLoadIdentity();
-
-	gluLookAt(0.0, 5.0, 1.0,
-			  0.0, 0.0, 0.0,
-			  0.0, 1.0, 0.0);
-	//glMatrixMode(GL_MODELVIEW);     // To operate on model-view matrix
-
-	glLoadIdentity();
-	glClearColor(0.2, 0.2, 0.2, 1.0);
-	
-	angle += 1;
-	if(angle >= 360)
-		angle = 0;
-	bob = sin(count++ / (M_PI * 12)) / 16.0;
-
-	glRotated(angle, 0, 1, 0);
-	//glTranslated(0.0, bob, 0.0);
-
+ 
+	gluLookAt(20.0, 10.0, 20.0,
+			   0.0,  2.0,  0.0,
+			   0.0,  1.0,  0.0);
+ 
+	angle += 0.25;
+	if (angle > 360.0) angle = 0;
+ 
+	glRotatef(angle, 0, 1, 0);
+ 
 	glPushMatrix();
-	{
-		//Chão
-		glColor4f(0.1, 0.8, 0.08, 1);
+		// Chão do mundo
+		glColor3f(0.1, 0.6, 0.08);
+		glBegin(GL_QUADS);
+			glNormal3f(  0.0, 1.0,   0.0);
+			glVertex3f(-30.0, 0.0, -30.0);
+			glVertex3f(-30.0, 0.0,  30.0);
+			glVertex3f( 30.0, 0.0,  30.0);
+			glVertex3f( 30.0, 0.0, -30.0);
+		glEnd();
+
+		// Chão do castelo
+		glColor3f(0.3, 0.3, 0.2);
+		glBegin(GL_QUADS);
+			glNormal3f( 0.0,  1.0,  0.0);
+			glVertex3f(-8.0, 0.01, -8.0);
+			glVertex3f(-8.0, 0.01,  8.0);
+			glVertex3f( 8.0, 0.01,  8.0);
+			glVertex3f( 8.0, 0.01, -8.0);
+		glEnd();
+
+		// Torre central
 		glPushMatrix();
-			glRotated(90, 1.0, 0.0, 0.0);
-			glTranslated(0.0, 0.0, 0.5);
-			glutSolidCylinder(0.8, 0.1, 8, 1);
+			glColor3f(0.7, 0.2, 0.05);
+			glTranslatef(0.0, 3.25, 0.0);
+			glPushMatrix();
+				glScaled(2.0, 6.5, 2.0);
+				glutSolidCube(1.0);
+			glPopMatrix();
+			glColor3f(0.5, 0.3, 0.1);
+			glTranslatef(0.0, 4.75, 0.0);
+			SolidPrismaTriangular(2.3, 3, 2.3);
 		glPopMatrix();
 
-		/*
-		//Corpo e cabeça
-		glTranslated(0.0, -0.25, 0);
-		glutSolidSphere(0.45, 12, 12);
-		glTranslated(0.0, 0.4, 0);
-		glutSolidSphere(0.30, 12, 12);
-		glTranslated(0.0, 0.35, 0);
-		glutSolidSphere(0.25, 12, 12);
+		// Cor das torres e paredes
+		glColor3f(0.3, 0.3, 0.3);
 
-		//Detalhes da cabeça
-		//Nariz
-		glColor4f(0.8, 0.5, 0, 1);
-		glTranslated(0.0, 0.0, 0.235);
-		glutSolidCone(0.065, 0.25, 12, 12);
+		// Torre 1
+		glPushMatrix();
+			glTranslatef(8.0, 0.0, 8.0);
+			glRotated(-90.0, 1, 0, 0);
+			glutSolidCylinder(1.0, 6.0, 12, 1);
+			glRotated( 90.0, 1, 0, 0);
+			glColor3f(0.0, 0.0, 0.0);
+			// Telhado
+			glColor3f(0.9, 0.5, 0.1);
+			glTranslatef( 0.0,  6.0, 0.0);
+			glRotated(-90.0, 1, 0, 0);
+			glutSolidCone(1.2, 2.1, 12, 12);
+		glPopMatrix();
 
-		glColor4f(101/255.0, 69/255.0, 26/255.0, 1); // Cor marrom
+		// Parede 1-2
+		glPushMatrix();
+			glColor3f(0.3, 0.3, 0.3);
+			glTranslatef( 8.0, 1.8, 0.0);
+			glScaled(1.0, 3.6, 16.0);
+			glutSolidCube(1.0);
+		glPopMatrix();
 
-		//Olho esquerdo
-		glTranslated(-0.15, 0.065, -0.075);
-		glutSolidSphere(0.055, 12, 12);
+		// Torre 2
+		glPushMatrix();
+			glColor3f(0.3, 0.3, 0.3);
+			glTranslatef(8.0, 0.0, -8.0);
+			glRotated(-90.0, 1, 0, 0);
+			glutSolidCylinder(1.0, 6.0, 12, 1);
+			glRotated( 90.0, 1, 0, 0);
+			// Telhado
+			glColor3f(0.9, 0.5, 0.1);
+			glTranslatef( 0.0,  6.0,  0.0);
+			glRotated(-90.0, 1, 0, 0);
+			glutSolidCone(1.2, 2.1, 12, 12);
+		glPopMatrix();
 
-		//Olho direito
-		glTranslated(0.30, 0, 0);
-		glutSolidSphere(0.055, 12, 12);
+		// Parede 2-3
+		glPushMatrix();
+			glColor3f(0.3, 0.3, 0.3);
+			glTranslatef( 0.0, 1.8, -8.0);
+			glScaled(16.0, 3.6, 1.0);
+			glutSolidCube(1.0);
+		glPopMatrix();
+			
+		// Torre 3
+		glPushMatrix();
+			glColor3f(0.3, 0.3, 0.3);
+			glTranslatef(-8.0, 0.0, -8.0);
+			glRotated(-90.0, 1, 0, 0);
+			glutSolidCylinder(1.0, 6.0, 12, 1);
+			glRotated( 90.0, 1, 0, 0);
+			// Telhado
+			glColor3f(0.9, 0.5, 0.1);
+			glTranslatef( 0.0,  6.0,  0.0);
+			glRotated(-90.0, 1, 0, 0);
+			glutSolidCone(1.2, 2.1, 12, 12);
+		glPopMatrix();
+
+		// Parede 3-4
+		glPushMatrix();
+			glColor3f(0.3, 0.3, 0.3);
+			glTranslatef( -8.0, 1.8, 0.0);
+			glScaled(1.0, 3.6, 16.0);
+			glutSolidCube(1.0);
+		glPopMatrix();
+
+		// Torre 4
+		glPushMatrix();
+			glColor3f(0.3, 0.3, 0.3);
+			glTranslatef(-8.0, 0.0, 8.0);
+			glRotated(-90.0, 1, 0, 0);
+			glutSolidCylinder(1.0, 6.0, 12, 1);
+			glRotated( 90.0, 1, 0, 0);
+			// Telhado
+			glColor3f(0.9, 0.5, 0.1);
+			glTranslatef( 0.0, 6.0, 0.0);
+			glRotated(-90.0, 1, 0, 0);
+			glutSolidCone(1.2, 2.1, 12, 12);
+		glPopMatrix();
+
+		// Parede 4-1
+		glPushMatrix();
+			glColor3f(0.3, 0.3, 0.3);
+			glTranslatef(0.0, 1.8, 8.0);
+			glScaled(16.0, 3.6, 1.0);
+			glutSolidCube(1.0);
+		glPopMatrix();
+
+		// Enable transparency blend
+		/* Não vamos usar nesse trabalho
+		glEnable(GL_BLEND);
+		glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+
+		glDisable(GL_BLEND);
 		*/
-	}
 	glPopMatrix();
-
+ 
 	glFlush();
 	glutSwapBuffers();
 }
 
-void reshape(GLsizei width, GLsizei height) {  // GLsizei for non-negative integer
-   // Compute aspect ratio of the new window
-   if (height == 0) height = 1;                // To prevent divide by 0
-   GLfloat aspect = (GLfloat)width / (GLfloat)height;
+int main (int argc, char **argv)
+{
+	int width  = 800,
+		height = 600;
+	glutInit(&argc, argv);
+	glutInitDisplayMode(GLUT_RGB | GLUT_DOUBLE | GLUT_DEPTH);
+	glutInitWindowSize(width, height);
+	glutCreateWindow("Castelo");
  
-   // Set the viewport to cover the new window
-   glViewport(0, 0, width, height);
+	glutDisplayFunc(display);
+	glutIdleFunc(display);
+	glutKeyboardFunc(keyboard);
+
+	glViewport(0, 0, width, height);
+	glLoadIdentity();
+	glMatrixMode(GL_PROJECTION);
+	GLfloat aspect = (GLfloat) width / height;
+	gluPerspective(45, aspect, .01f, 100.0f);
+	glMatrixMode(GL_MODELVIEW);
+	glShadeModel(GL_SMOOTH);
+	glClearDepth(1.0f);
+	glEnable(GL_DEPTH_TEST);
+	glDepthFunc(GL_LEQUAL);
+	glHint(GL_PERSPECTIVE_CORRECTION_HINT, GL_NICEST);
+	glClearColor(0.0, 0.0, 0.0, 1.0);
  
-   // Set the aspect ratio of the clipping volume to match the viewport
-   glMatrixMode(GL_PROJECTION);  // To operate on the Projection matrix
-   glLoadIdentity();             // Reset
-   // Enable perspective projection with fovy, aspect, zNear and zFar
-   gluPerspective(45.0f, aspect, 0.1f, 100.0f);
+	GLfloat mat_shininess[]  = { 8.0 };
+	GLfloat mat_specular[]   = { 0.75, 0.75, 0.75, 0.75 };
+ 
+	GLfloat light_ambient[]  = { 0.4, 0.4, 0.4, 1.0};
+	GLfloat light_diffuse[]  = { 0.8, 0.8, 0.8, 0.9};
+	GLfloat light_specular[] = { 1.0, 1.0, 1.0, 0.1};
+	GLfloat light_position[] = { 6.0, 6.0, 2.0, 0.0};
+ 
+	glMaterialfv(GL_FRONT, GL_SPECULAR,  mat_specular);
+	glMaterialfv(GL_FRONT, GL_SHININESS, mat_shininess);
+ 
+	glLightfv(GL_LIGHT0, GL_AMBIENT, light_ambient);
+	glLightfv(GL_LIGHT0, GL_DIFFUSE, light_diffuse);
+	glLightfv(GL_LIGHT0, GL_SPECULAR, light_specular);
+ 
+	glLightfv(GL_LIGHT0, GL_POSITION, light_position);
+ 
+	glEnable(GL_LIGHTING);
+	glEnable(GL_LIGHT0);
+ 
+	glEnable(GL_COLOR_MATERIAL);
+ 
+	glLightModeli(GL_LIGHT_MODEL_TWO_SIDE, GL_TRUE);
+ 
+	glutMainLoop();
+ 
+	return 0;
 }
