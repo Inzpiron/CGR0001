@@ -210,7 +210,7 @@ void SolidPrismaTriangular(GLfloat m, GLfloat h, GLfloat n)
 void SolidCylinder(GLfloat radius, GLfloat height, GLint sides)
 {
 	height /= 2;
-	GLfloat x, z, l;
+	GLfloat x, z, l, normal[3];
 
 	// Como fazer um cilindro de pé visto de frente
 	// Base
@@ -220,6 +220,8 @@ void SolidCylinder(GLfloat radius, GLfloat height, GLint sides)
 		{
 			x = cos((2.0 * M_PI * i)/(GLdouble)sides) * radius;
 			z = sin((2.0 * M_PI * i)/(GLdouble)sides) * radius;
+			normal[0] = x; normal[1] = height; normal[2] = z;
+			glNormal3fv(normal);
 			glVertex3f(x, -height, z);
 		}
 	glEnd();
@@ -231,6 +233,8 @@ void SolidCylinder(GLfloat radius, GLfloat height, GLint sides)
 		{
 			x = cos((2.0 * M_PI * i)/(GLdouble)sides) * radius;
 			z = sin((2.0 * M_PI * i)/(GLdouble)sides) * radius;
+			normal[0] = x; normal[1] = height; normal[2] = z;
+			glNormal3fv(normal);
 			glVertex3f(x, height, z);
 		}
 	glEnd();
@@ -241,7 +245,11 @@ void SolidCylinder(GLfloat radius, GLfloat height, GLint sides)
 		{
 			x = cos((2.0 * M_PI * i)/(GLdouble)sides) * radius;
 			z = sin((2.0 * M_PI * i)/(GLdouble)sides) * radius;
+			normal[0] = x; normal[1] = -height; normal[2] = z;
+			glNormal3fv(normal);
 			glVertex3f(x, -height, z);
+			normal[0] = x; normal[1] = height; normal[2] = z;
+			glNormal3fv(normal);
 			glVertex3f(x,  height, z);
 		}
 	glEnd();
