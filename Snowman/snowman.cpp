@@ -159,7 +159,7 @@ int main (int argc, char **argv)
 	glEnable(GL_COLOR_MATERIAL);
  
 	glLightModeli(GL_LIGHT_MODEL_TWO_SIDE, GL_TRUE);
- 
+
 	glutMainLoop();
  
 	return 0;

@@ -21,8 +21,11 @@ private:
 			forearmLenght    = 1.2, // É um cilindro
 			armLenght        = 1.2, // É um cilindro
 			
-			headLenght       = 0.4, // É um cilindro
-			headDiameter     = 0.4,
+			neckLenght       = 0.4, // É um cilindro
+			neckDiameter     = 0.4,
+
+			headHeight       = 0.8, // É um paralelepípedo regular de base quadrada
+			headLenght       = 0.7,
 			
 			torsoLenght      = 0.6, // É um paralelepípedo regular de base retangular
 			torsoWidth       = 1.6,
@@ -67,7 +70,15 @@ public:
 				SolidCube(torsoWidth, torsoHeight, torsoLenght);
 
 				// Desenhar cabeça
-
+				glPushMatrix();
+				{
+					setBodyColor();
+					glTranslatef(0.0, torsoHeight / 2.0 + neckLenght / 2.0, 0.0);
+					SolidCylinder(neckDiameter / 2.0, neckLenght, 20);
+					glTranslatef(0.0, neckLenght / 2.0 + headLenght / 2.0, 0.0);
+					SolidCube(headLenght, headHeight, headLenght);
+				}
+				glPopMatrix();
 
 				// Perna direita
 				glPushMatrix();
@@ -198,7 +209,7 @@ void display(void)
 	glLoadIdentity();
  
 	gluLookAt(-6.0, 4.0, -6.0,
-			   0.0, 2.2,  0.0,
+			   0.0, 2.9,  0.0,
 			   0.0, 1.0,  0.0);
  
 	angle += 0.5;
@@ -266,7 +277,7 @@ int main (int argc, char **argv)
 	glHint(GL_PERSPECTIVE_CORRECTION_HINT, GL_NICEST);
 	glClearColor(0.0, 0.0, 0.0, 1.0);
  
-	GLfloat mat_shininess[]  = { 8.0 };
+	GLfloat mat_shininess[]  = { 32.0 };
 	GLfloat mat_specular[]   = { 0.75, 0.75, 0.75, 0.75 };
  
 	GLfloat light_ambient[]  = { 0.4, 0.4, 0.4, 1.0};

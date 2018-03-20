@@ -89,7 +89,16 @@ void display(void)
 		glPushMatrix();
 			glColor3f(0.3, 0.3, 0.3);
 			glTranslatef( 8.0, 1.8, 0.0);
+			glPushMatrix();
+				glScaled(2.0, 6.0, 2.0);
+				glutSolidCube(1.0);
+			glPopMatrix();
+			glTranslatef(0.0, 4.0, 0.0);
+			glColor3f(0.9, 0.5, 0.1);
+			SolidPrismaTriangular(2.5, 2.0, 2.5);
+			glTranslatef(0.0, -4.0, 0.0);
 			glScaled(1.0, 3.6, 16.0);
+			glColor3f(0.3, 0.3, 0.3);
 			glutSolidCube(1.0);
 		glPopMatrix();
 

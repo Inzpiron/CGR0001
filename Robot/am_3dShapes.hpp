@@ -43,6 +43,18 @@ void normalize(GLfloat* n, GLfloat v[])
 		n[i] /= l;
 }
 
+GLfloat* normalize(GLfloat* n, GLfloat x, GLfloat y, GLfloat z)
+{
+	GLfloat l = 0.0;
+	l = sqrt(x*x + y*y + z*z);
+	if (l == 0.0) {return n;}
+	n[0] = x/l;
+	n[1] = y/l;
+	n[2] = z/l;
+	return n;
+}
+
+
 // Esse aqui está com problemas no cálculo das normais :(
 void SolidCube(GLfloat m, GLfloat h, GLfloat n)
 {
@@ -54,98 +66,56 @@ void SolidCube(GLfloat m, GLfloat h, GLfloat n)
 
 	// Como fazer um cubo visto de frente
 	// Base
+	glNormal3f(0.0, -1.0, 0.0);
 	glBegin(GL_QUADS);
-		normalize(normal, v[0]);
-		glNormal3fv(normal);
 		glVertex3fv(v[0]);
-		normalize(normal, v[3]);
-		glNormal3fv(normal);
 		glVertex3fv(v[3]);
-		normalize(normal, v[7]);
-		glNormal3fv(normal);
 		glVertex3fv(v[7]);
-		normalize(normal, v[4]);
-		glNormal3fv(normal);
 		glVertex3fv(v[4]);
 	glEnd();
 
 	// Frente
+	glNormal3f(0.0, 0.0, 1.0);
 	glBegin(GL_QUADS);
-		normalize(normal, v[0]);
-		glNormal3fv(normal);
 		glVertex3fv(v[0]);
-		normalize(normal, v[3]);
-		glNormal3fv(normal);
 		glVertex3fv(v[3]);
-		normalize(normal, v[2]);
-		glNormal3fv(normal);
 		glVertex3fv(v[2]);
-		normalize(normal, v[1]);
-		glNormal3fv(normal);
 		glVertex3fv(v[1]);
 	glEnd();
 
 	// Direita
+	glNormal3f(1.0, 0.0, 0.0);
 	glBegin(GL_QUADS);
-		normalize(normal, v[3]);
-		glNormal3fv(normal);
 		glVertex3fv(v[3]);
-		normalize(normal, v[7]);
-		glNormal3fv(normal);
 		glVertex3fv(v[7]);
-		normalize(normal, v[6]);
-		glNormal3fv(normal);
 		glVertex3fv(v[6]);
-		normalize(normal, v[2]);
-		glNormal3fv(normal);
 		glVertex3fv(v[2]);
 	glEnd();
 
 	// Esquerda
+	glNormal3f(-1.0, 0.0, 0.0);
 	glBegin(GL_QUADS);
-		normalize(normal, v[0]);
-		glNormal3fv(normal);
 		glVertex3fv(v[0]);
-		normalize(normal, v[1]);
-		glNormal3fv(normal);
 		glVertex3fv(v[1]);
-		normalize(normal, v[5]);
-		glNormal3fv(normal);
 		glVertex3fv(v[5]);
-		normalize(normal, v[4]);
-		glNormal3fv(normal);
 		glVertex3fv(v[4]);
 	glEnd();
 
 	// Trás
+	glNormal3f(0.0, 0.0, -1.0);
 	glBegin(GL_QUADS);
-		normalize(normal, v[4]);
-		glNormal3fv(normal);
 		glVertex3fv(v[4]);
-		normalize(normal, v[7]);
-		glNormal3fv(normal);
 		glVertex3fv(v[7]);
-		normalize(normal, v[6]);
-		glNormal3fv(normal);
 		glVertex3fv(v[6]);
-		normalize(normal, v[5]);
-		glNormal3fv(normal);
 		glVertex3fv(v[5]);
 	glEnd();
 
 	// Topo
+	glNormal3f(0.0, 1.0, 0.0);
 	glBegin(GL_QUADS);
-		normalize(normal, v[1]);
-		glNormal3fv(normal);
 		glVertex3fv(v[1]);
-		normalize(normal, v[2]);
-		glNormal3fv(normal);
 		glVertex3fv(v[2]);
-		normalize(normal, v[6]);
-		glNormal3fv(normal);
 		glVertex3fv(v[6]);
-		normalize(normal, v[5]);
-		glNormal3fv(normal);
 		glVertex3fv(v[5]);
 	glEnd();
 }
@@ -215,12 +185,16 @@ void SolidCylinder(GLfloat radius, GLfloat height, GLint sides)
 	// Como fazer um cilindro de pé visto de frente
 	// Base
 	glBegin(GL_TRIANGLE_FAN);
+		normal[0] = 0.0; normal[1] = -height; normal[2] = 0.0;
+		normalize(normal, normal);
+		glNormal3f(0.0, 0.0, 0.0);
 		glVertex3f(0.0, -height, 0.0);
 		for (int i = 0; i <= sides; i++)
 		{
 			x = cos((2.0 * M_PI * i)/(GLdouble)sides) * radius;
 			z = sin((2.0 * M_PI * i)/(GLdouble)sides) * radius;
 			normal[0] = x; normal[1] = height; normal[2] = z;
+			normalize(normal, normal);
 			glNormal3fv(normal);
 			glVertex3f(x, -height, z);
 		}
@@ -234,6 +208,7 @@ void SolidCylinder(GLfloat radius, GLfloat height, GLint sides)
 			x = cos((2.0 * M_PI * i)/(GLdouble)sides) * radius;
 			z = sin((2.0 * M_PI * i)/(GLdouble)sides) * radius;
 			normal[0] = x; normal[1] = height; normal[2] = z;
+			normalize(normal, normal);
 			glNormal3fv(normal);
 			glVertex3f(x, height, z);
 		}
@@ -245,10 +220,12 @@ void SolidCylinder(GLfloat radius, GLfloat height, GLint sides)
 		{
 			x = cos((2.0 * M_PI * i)/(GLdouble)sides) * radius;
 			z = sin((2.0 * M_PI * i)/(GLdouble)sides) * radius;
-			normal[0] = x; normal[1] = -height; normal[2] = z;
+			normal[0] = x; normal[1] = 0.0; normal[2] = z;
+			normalize(normal, normal);
 			glNormal3fv(normal);
 			glVertex3f(x, -height, z);
-			normal[0] = x; normal[1] = height; normal[2] = z;
+			normal[0] = x; normal[1] = 0.0; normal[2] = z;
+			normalize(normal, normal);
 			glNormal3fv(normal);
 			glVertex3f(x,  height, z);
 		}

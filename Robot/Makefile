@@ -1,7 +1,7 @@
 CC=g++
 IN=robot.cpp
 OUT=robot
-FLAGS=-lglut -lGL -lGLU -lm
+FLAGS=-lglut -lGL -lGLU -lm -std=c++11
 
 
 DEFAULT:
