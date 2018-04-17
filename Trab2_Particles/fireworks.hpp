@@ -6,90 +6,106 @@
 #include <vector>
 #include <cmath>
 #include <random>
+#include <cstdlib>
 
 class FireworkRocket
 {
 private:
-	static std::random_device rd;
 	float grav = -0.981f;
-	float vx, vy, vz;
-	sf::Time life;
+	// float vx, vy, vz;
+	float vx, vy;
 
 public:
-	float x, y, z;
+	// float x, y, z;
+	float x, y;
+	float color[3];
+	sf::Time life;
 
-	FireworkRocket()
+	FireworkRocket(sf::Time t)
 	{
-		this->life = sf::Time.asSeconds(0);
-		x = ((rd() % 2001) - 1000) / 1000.0f;
-		z = ((rd() % 2001) - 1000) / 1000.0f;
-		y = -0.01f;
-		vx = ((rd() % 1001) - 500) / 1000.0f;
-		vz = ((rd() % 1001) - 500) / 1000.0f;
-		vy = 1.5f + ((rd() % 1000) - 400) / 1000.0f;
+		srand (t.asMicroseconds());
+		this->life = sf::seconds(0);
+		x = ((rand() % 2001) - 1000) / 1.0f;
+		//z = ((rand() % 2001) - 1000) / 1000.0f;
+		y = -200.0f;
+		vx = ((rand() % 1001) - 500) / 1000.0f;
+		//vz = ((rand() % 1001) - 500) / 1000.0f;
+		vy = 40.0f + ((rand() % 2000)) / 100.0f;
+		color[0] = (rand() % 256) / 255.0;
+		color[1] = (rand() % 256) / 255.0;
+		color[2] = (rand() % 256) / 255.0;
 	}
 
 	int runTick(sf::Time t)
 	{
-		life += t;
-		float dt = t.asSeconds();
+		life += sf::seconds(t.asSeconds()*10000);
+		long long dt = t.asMilliseconds();
+
 		x += dt * vx;
-		z += dt * vz;
+		//z += dt * vz;
 		y += (dt * vy) / 2;
 		vy += dt * grav;
 		y += (dt * vy) / 2;
 
-		if (life > 2.0)
+		if (life.asSeconds() > 2.0)
 		{
-			if (rd() % 100 < 30)
-				return 0;
+			if (rand() % 100 < 30)
+				return 1;
 		}
+		return 0;
 	}
-}
+};
 
 class FireworkSpark
 {
 private:
-	static std::random_device rd;
-	float grav = -0.8f;
-	float xz_decay = 0.97f;
-	float vx, vy, vz;
+	float grav = -07.f;
+	float xz_decay = 0.72f;
+	// float vx, vy, vz;
+	float vx, vy;
 	sf::Time life;
 
 public:
-	float x, y, z;
+	// float x, y, z;
+	float x, y;
+	float color[3];
 
-	FireworkSpark(float x, float y, float z)
+	// FireworkSpark(float x, float y, float z)
+	FireworkSpark(float x, float y, sf::Time t)
 	{
-		this->life = sf::Time.asSeconds(0);
+		srand (t.asMicroseconds());
+		this->life = sf::seconds(0);
 		this->x = x;
 		this->y = y;
-		this->z = z;
-		vx = ((rd() % 2001) - 1000) / 1000.0f;
-		vy = ((rd() % 2001) -  800) / 1000.0f;
-		vz = ((rd() % 2001) - 1000) / 1000.0f;
+		// this->z = z;
+		vx = ((rand() % 2001) - 1000) / 10.0f;
+		vy = ((rand() % 2001) -  800) / 10.0f;
+		// vz = ((rand() % 2001) - 1000) / 1000.0f;
+		color[0] = (rand() % 256) / 255.0;
+		color[1] = (rand() % 256) / 255.0;
+		color[2] = (rand() % 256) / 255.0;
 	}
 
 	int runTick(sf::Time t)
 	{
-		life += t;
-		float dt = t.asSeconds();
+		life += sf::seconds(t.asSeconds()*10000);
+		long long dt = t.asMicroseconds();
 
 		x  += dt * vx;
 		vx *= xz_decay;
-		z  += dt * vz;
-		vz *= xz_decay;
+		// z  += dt * vz;
+		// vz *= xz_decay;
 		y  += (dt * vy) / 2;
 		vy += dt * grav;
 		y  += (dt * vy) / 2;
 
-		if (life > 2.0)
+		if (life.asSeconds() > 2.0)
 		{
-			if (rd() % 100 < 30)
-				return 0;
+			if (rand() % 100 < 30)
+				return 1;
 		}
-		return 1;
+		return 0;
 	}
-}
+};
 
 #endif
