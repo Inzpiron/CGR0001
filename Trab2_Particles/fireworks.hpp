@@ -24,7 +24,7 @@ public:
 		srand(mt());
 		this->life = sf::seconds(0);
 		x = (int) ((rand() % 600) - 300) / 1.0f;
-		y = -320.0f;
+		y = -400.0f;
 		vx = ((rand() % 1001) - 500) / 10.0f;
 		vy = 200.0f + ((rand() % 2000)) / 15.0f;
 		color[0] = (rand() % 256) / 255.0;

@@ -44,12 +44,12 @@ void physics(sf::Window *window)
 				spark = 1;
 				x = fw_r[i].x;
 				y = fw_r[i].y;
-				for (j = 0; j < 100; j++)
+				for (j = 0; j < 250; j++)
 				{
 					fw_s.push_back(FireworkSpark(x, y, fw_r[i].color, mt));
 				}
 
-				fw_cs += 100;
+				fw_cs += 250;
 
 				fw_r.erase(fw_r.begin() + i);
 				fw_cr--;
@@ -78,7 +78,13 @@ int main(int argc, char **argv)
 	int i, j;
 	float x, y, z;
 
-	sf::Window window(sf::VideoMode(WW, WH), "Fireworks!", sf::Style::Default, sf::ContextSettings(24));
+
+
+	sf::Window window(sf::VideoMode(WW, WH),
+					  "Fireworks!",
+					  sf::Style::Titlebar | sf::Style::Close,
+					  sf::ContextSettings(24));
+
 	window.setVerticalSyncEnabled(false);
 	window.setFramerateLimit(144);
 
