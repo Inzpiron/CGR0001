@@ -1,95 +1,39 @@
 #include <SFML/Window.hpp>
 #include <SFML/OpenGL.hpp>
 #include <GL/freeglut.h>
+#include <thread>
 #include "fireworks.hpp"
 #include "am_3dShapes.hpp"
 
-#define WW 1280
+#define WW 800
 #define WH 600
 
+int mut = 0, spark = 0;
 unsigned int fw_cr = 0, fw_cs = 0;
 std::vector<FireworkRocket> fw_r;
 std::vector<FireworkSpark> fw_s;
 GLfloat angle = 0.0;
 
-void render(sf::Window *window)
+void physics(sf::Window *window)
 {
-	window->setActive(true);
-
-	window->setVerticalSyncEnabled(true);
-
 	int i, j;
+	double x, y;
+	std::random_device rd;
+	std::mt19937 mt(rd());
+	sf::Clock clock;
+	sf::Time dt;
 
 	while (window->isOpen())
 	{
-		glMatrixMode(GL_MODELVIEW);
-		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-		glClearColor(0.0, 0.0, 0.0, 1.0);
-		glLoadIdentity();
-
-		// Rocket science
-		printf("\n\nfw_cr=%d\n");
-		for (i = 0; i < fw_cr; i++)
-		{
-			printf("i=%d,x=%f,y=%f\n", i, fw_r[i].x, fw_r[i].y);
-			glPushMatrix();
-				glTranslatef(fw_r[i].x, fw_r[i].y, 0.0);
-				glRotatef((rand() % 360), 0, 0, 1);
-				glColor3f(((rand() % 255) / 255), ((rand() % 255) / 255), ((rand() % 255) / 255)); //rainbow
-				amCircle(60.0, 6);
-			glPopMatrix();
-		}
-
-		glFlush();
-		window->display();
-	}
-
-}
-
-int main(int argc, char **argv)
-{
-	int i, j;
-	float x, y, z;
-	std::random_device rd;
-
-	sf::Window window(sf::VideoMode(WW, WH), "Fireworks!", sf::Style::None, sf::ContextSettings(24));
-	window.setVerticalSyncEnabled(true);
-
-	//window.setActive(false);
-
-	// Initialize OpenGL
-	glViewport (0, 0, WW, WH);						// update the viewport
-    glMatrixMode(GL_PROJECTION);					// update projection
-    glLoadIdentity();
-    gluOrtho2D(-WW/2.0, WW/2.0, -WH/2.0, WH/2.0);	// map screen size to viewport
-    glMatrixMode(GL_MODELVIEW);
-
-	sf::Clock clock, rc;
-	sf::Time dt;
-    sf::Event event;
-
-	//sf::Thread th_render(&render, &window);
-	//th_render.launch();
-
-	clock.restart();
-	while (window.isOpen())
-	{
-		dt = clock.getElapsedTime();
-		//printf("fps = %lf\n", 1000.0/dt.asMilliseconds());
-		// scanning for window close
-        while (window.pollEvent(event))
-        {
-            // "close requested" event: we close the window
-            if (event.type == sf::Event::Closed)
-                window.close();
-        }
-
+		clock.restart();
 		// Physics and game logic
-		if ((rd() % 100) < 5 && fw_cr < 10)
+		if (mut || ((mt() % 1000) < 8 && fw_cr < 4))
 		{
 			// 5% chance to spawn new rocket if there are less than 10 on screen
-			fw_r.push_back(FireworkRocket(rc.getElapsedTime()));
+			// or spawn one if user pressed 'space'
+			fw_r.push_back(FireworkRocket(mt));
 			fw_cr++;
+			mut = 0;
 		}
 
 		// Rocket science
@@ -97,13 +41,12 @@ int main(int argc, char **argv)
 		{
 			if (fw_r[i].runTick(dt))
 			{
+				spark = 1;
 				x = fw_r[i].x;
 				y = fw_r[i].y;
-				//z = fw_r[i].z;
 				for (j = 0; j < 100; j++)
 				{
-					// fw_s.push_back(FireworkSpark(x, y, z));
-					fw_s.push_back(FireworkSpark(x, y, rc.getElapsedTime()));
+					fw_s.push_back(FireworkSpark(x, y, fw_r[i].color, mt));
 				}
 
 				fw_cs += 100;
@@ -124,45 +67,93 @@ int main(int argc, char **argv)
 				i--;
 			}
 		}
+		sf::sleep(sf::milliseconds(10));
+		dt = clock.getElapsedTime();
+	}
+
+}
+
+int main(int argc, char **argv)
+{
+	int i, j;
+	float x, y, z;
+
+	sf::Window window(sf::VideoMode(WW, WH), "Fireworks!", sf::Style::Default, sf::ContextSettings(24));
+	window.setVerticalSyncEnabled(false);
+	window.setFramerateLimit(144);
+
+	std::thread phsx_thr(physics, &window);
+
+	// Initialize OpenGL
+	glViewport (0, 0, WW, WH);						// update the viewport
+    glMatrixMode(GL_PROJECTION);					// update projection
+    glLoadIdentity();
+    gluOrtho2D(-WW/2.0, WW/2.0, -WH/2.0, WH/2.0);	// map screen size to viewport
+    glMatrixMode(GL_MODELVIEW);
+
+	sf::Clock clock;
+	sf::Time dt;
+    sf::Event event;
+
+	clock.restart();
+	while (window.isOpen())
+	{
+		clock.restart();
+		// scanning for window close
+        while (window.pollEvent(event))
+        {
+            if (event.type == sf::Event::Closed)
+                window.close();
+			else if (sf::Keyboard::isKeyPressed(sf::Keyboard::Escape))
+				window.close();
+			else if (sf::Keyboard::isKeyPressed(sf::Keyboard::Space))
+				mut = 1;
+        }
 
 		// Drawing
 		glMatrixMode(GL_MODELVIEW);
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-		glClearColor(0.03, 0.01, 0.04, 1.0);
+		if (spark)
+		{
+			glClearColor(0.9, 0.9, 0.7, 1.0);
+			spark = 0;
+		}
+		else
+			glClearColor(0.03, 0.01, 0.04, 1.0);
 		glLoadIdentity();
 
 		// Rocket science
-		printf("\nfw_cr=%d\n");
+		printf("fw_cr=%d\n", fw_cr);
 		for (i = 0; i < fw_cr; i++)
 		{
-			printf("i=%d,x=%f,y=%f,life=%f\n", i, fw_r[i].x, fw_r[i].y, fw_r[i].life.asSeconds());
+			//printf("r=%d,x=%f,y=%f,life=%f\n", i, fw_r[i].x, fw_r[i].y, fw_r[i].life.asSeconds());
 			glPushMatrix();
 				glTranslatef(fw_r[i].x, fw_r[i].y, 0.0);
 				glRotatef((rand() % 360), 0, 0, 1);
 				glColor3fv(fw_r[i].color); //rainbow
-				amCircle(60.0, 9);
+				amCircle(20.0, 9);
 			glPopMatrix();
 		}
 
 		// Spark science
 		for (i = 0; i < fw_cs; i++)
 		{
-			//printf("i=%d,x=%f,y=%f,life=%f\n", i, fw_r[i].x, fw_r[i].y, fw_r[i].life.asSeconds());
+			//printf("s=%d,x=%f,y=%f,life=%f\n", i, fw_r[i].x, fw_r[i].y, fw_r[i].life.asSeconds());
 			glPushMatrix();
-				glTranslatef(fw_s[i].x, fw_r[i].y, 0.0);
+				glTranslatef(fw_s[i].x, fw_s[i].y, 0.0);
 				glRotatef((rand() % 360), 0, 0, 1);
 				glColor3fv(fw_s[i].color); //rainbow
-				amCircle(7.0, 3);
+				amCircle(7.0 * (1.5 - fw_s[i].life.asSeconds()), 3);
 			glPopMatrix();
 		}
 
 		glFlush();
 		window.display();
-		sf::sleep(sf::microseconds(1000));
-		clock.restart();
+		printf("FPS=%9.2lf\n", (double)1.0 / (double) dt.asSeconds());
+		dt = clock.getElapsedTime();
 	}
 
-	//th_render.join();
+	phsx_thr.join();
 
 	return 0;
 }

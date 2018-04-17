@@ -207,8 +207,7 @@ void amRectangle(GLfloat width, GLfloat height)
 	GLfloat v[6][2] = {{ -w, +h }, {  -w, -h },
 					   { +w, -h }, {  +w, +h }};
 
-	// Como fazer um prisma triangular visto de frente
-	// 
+	// Como fazer um ~prisma triangular~ reatangulo
 	glBegin(GL_QUADS);
 		glVertex2fv(v[1]);
 		glVertex2fv(v[2]);
@@ -221,11 +220,9 @@ void amCircle(GLfloat diameter, GLint sides)
 {
 	GLfloat radius = diameter / 2;
 	GLfloat x, y;
-
-	// Como fazer um cilindro de pé visto de frente
+	// Como fazer um
 	// Círculo
 	glBegin(GL_TRIANGLE_FAN);
-		//glVertex2f(0.0, -radius);
 		for (int i = 0; i <= sides; i++)
 		{
 			x = cos((2.0 * M_PI * i)/(GLdouble)sides) * radius;
