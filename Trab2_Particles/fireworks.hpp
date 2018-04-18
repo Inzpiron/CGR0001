@@ -35,7 +35,7 @@ public:
 		color[0] = (rand() % 256) / 255.0;
 		color[1] = (rand() % 256) / 255.0;
 		color[2] = (rand() % 256) / 255.0;
-		color[3] = 1.0;
+		color[3] = 0.6;
 		def[0] = color[0];
 		def[1] = color[1];
 		def[2] = color[2];
