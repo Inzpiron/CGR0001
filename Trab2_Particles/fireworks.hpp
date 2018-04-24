@@ -22,6 +22,7 @@ public:
 	float vx, vy, ma;
 	float color[4], def[4];
 	sf::Time life;
+	int sides;
 
 	FireworkRocket(std::mt19937 mt)
 	{
@@ -40,6 +41,7 @@ public:
 		def[1] = color[1];
 		def[2] = color[2];
 		def[3] = 1.0;
+		sides = 3 + (rand() % 7);
 	}
 
 	int runTick(sf::Time t)
@@ -79,6 +81,7 @@ public:
 	float x, y;
 	float color[3];
 	sf::Time life;
+	int sides;
 
 	FireworkSpark(FireworkRocket pai, std::mt19937 &mt)
 	{
@@ -88,7 +91,7 @@ public:
 		this->x = pai.x;
 		this->y = pai.y;
 		float l = sqrt(pai.vx*pai.vx + pai.vy*pai.vy);
-		dir = (rand() % 360) / M_PI;
+		dir = (rand() % 180) / M_PI;
 		dx = cos(2*dir);
 		dy = sin(2*dir);
 		float mv = (float) (rand() % 10);
@@ -97,6 +100,7 @@ public:
 		this->color[0] = pai.color[0];
 		this->color[1] = pai.color[1];
 		this->color[2] = pai.color[2];
+		this->sides = pai.sides;
 	}
 
 	int runTick(sf::Time t)
