@@ -86,7 +86,7 @@ int main(int argc, char **argv)
 					  sf::ContextSettings(24));
 
 	window.setVerticalSyncEnabled(false);
-	window.setFramerateLimit(144);
+	window.setFramerateLimit(180);
 
 	std::thread phsx_thr(physics, &window);
 
