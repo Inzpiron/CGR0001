@@ -2,8 +2,6 @@
 #include <SFML/OpenGL.hpp>
 #include <SFML/Graphics.hpp>
 #include <GL/freeglut.h>
-#include <thread>
-#include <mutex>
 #include "OBJ_Loader.h"
 
 #define WW 800
@@ -40,11 +38,12 @@ int main(int argc, char **argv)
 
 	// Initialize OpenGL
 	glViewport (0, 0, WW, WH);						// update the viewport
+	glLoadIdentity();
 	glMatrixMode(GL_PROJECTION);					// update projection
 	glLoadIdentity();
-	gluOrtho2D(-WW/2.0, WW/2.0, -WW*ar/2.0, WW*ar/2.0);	// map screen size to viewport
+	gluPerspective(45, ar, .01f, 100.0f);
 	glMatrixMode(GL_MODELVIEW);
-
+	
 	/* Enable Texture Mapping ( NEW ) */
 	glEnable( GL_TEXTURE_2D );
 	glShadeModel( GL_SMOOTH );
@@ -98,7 +97,7 @@ int main(int argc, char **argv)
 				glViewport(0, 0, event.size.width, event.size.height);
 				glMatrixMode(GL_PROJECTION);					// update projection
 				glLoadIdentity();
-				gluOrtho2D(-WW/2.0, WW/2.0, -WW*ar/2.0, WW*ar/2.0);	// map screen size to viewport
+				gluPerspective(45, ar, .01f, 100.0f);
 				glMatrixMode(GL_MODELVIEW);
 			}
 			else if (sf::Keyboard::isKeyPressed(sf::Keyboard::Escape))
@@ -111,11 +110,22 @@ int main(int argc, char **argv)
 		glClearColor(0.0, 0.0, 0.0, 1.0);
 		glLoadIdentity();
 	
-		gluLookAt( 4.0,  3.0,  4.0,
+		gluLookAt( 4.0,  4.0,  4.0,
 				   0.0,  0.0,  0.0,
 				   0.0,  1.0,  0.0);
+		glPushMatrix();
+		glColor3f(0.1, 0.6, 0.08);
+		glBegin(GL_QUADS);
+			glNormal3f(  0.0, 1.0,   0.0);
+			glVertex3f(-30.0, 0.0, -30.0);
+			glVertex3f(-30.0, 0.0,  30.0);
+			glVertex3f( 30.0, 0.0,  30.0);
+			glVertex3f( 30.0, 0.0, -30.0);
+		glEnd();
 
 		glColor3f(1.0, 1.0, 1.0);
+		
+		sf::Texture::bind(&texture);
 		objl::Mesh curMesh;
 		for (int i = 0; i < loader.LoadedMeshes.size(); i++)
 		{
@@ -132,14 +142,16 @@ int main(int argc, char **argv)
 				nz = curMesh.Vertices[j].Normal.Z;
 				u = curMesh.Vertices[j].TextureCoordinate.X;
 				v = curMesh.Vertices[j].TextureCoordinate.Y;
-				glTexCoord2f(u, v);
+				//glTexCoord2f(u, v);
 				glNormal3f(nx, ny, nz);
 				glVertex3f(x, y, z);
 				std::cout << "Drawing vertex at " << x << " " << y << " " << z << std::endl;
 			}
 			glEnd();
 		}
+		glPopMatrix();
 
+		glFlush();
 		window.display();
 		printf("FPS=%4d\n", (int)((double)1.0 / (double) dt.asSeconds()));
 		dt = clock.getElapsedTime();
