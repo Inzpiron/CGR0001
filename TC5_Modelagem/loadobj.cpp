@@ -4,30 +4,15 @@
 #include <GL/freeglut.h>
 #include <thread>
 #include <mutex>
-#include "OBJ-Loader/Source/OBJ_Loader.h"
+#include "OBJ_Loader.h"
 
 #define WW 800
 #define WH 600
 
-GLfloat angle = 0.0;
-
-/*
-void physics(sf::Window *window)
-{
-	while (window->isOpen())
-	{
-		clock.restart();
-
-		sf::sleep(sf::milliseconds(10));
-		dt = clock.getElapsedTime();
-	}
-}
-*/
-
 int main(int argc, char **argv)
 {
 	sf::Window window(sf::VideoMode(WW, WH),
-					  "Fireworks!",
+					  "Modelo do Blender!",
 					  sf::Style::Default,
 					  sf::ContextSettings(24));
 
@@ -50,8 +35,6 @@ int main(int argc, char **argv)
 	}
 
 	sf::Texture::bind(&texture);
-
-	//std::thread phsx_thr(physics, &window);
 
 	GLfloat ar = (GLfloat)WH/(GLfloat)WW;
 
@@ -137,34 +120,32 @@ int main(int argc, char **argv)
 		for (int i = 0; i < loader.LoadedMeshes.size(); i++)
 		{
 			curMesh = loader.LoadedMeshes[i];
-			glBegin(GL_POINTS);
+			glBegin(GL_TRIANGLE_STRIP);
 			std::cout << curMesh.Vertices.size() << std::endl;
 			for (int j = 0; j < curMesh.Vertices.size(); j++)
 			{
 				x = curMesh.Vertices[j].Position.X;
 				y = curMesh.Vertices[j].Position.Y;
 				z = curMesh.Vertices[j].Position.Z;
-				nx = curMesh.Vertices[j].Position.X;
-				ny = curMesh.Vertices[j].Position.Y;
-				nz = curMesh.Vertices[j].Position.Z;
+				nx = curMesh.Vertices[j].Normal.X;
+				ny = curMesh.Vertices[j].Normal.Y;
+				nz = curMesh.Vertices[j].Normal.Z;
 				u = curMesh.Vertices[j].TextureCoordinate.X;
 				v = curMesh.Vertices[j].TextureCoordinate.Y;
-				glNormal3f(nx, ny, nz);
 				glTexCoord2f(u, v);
+				glNormal3f(nx, ny, nz);
 				glVertex3f(x, y, z);
+				std::cout << "Drawing vertex at " << x << " " << y << " " << z << std::endl;
 			}
 			glEnd();
 		}
 
-		//glFlush();
 		window.display();
 		printf("FPS=%4d\n", (int)((double)1.0 / (double) dt.asSeconds()));
 		dt = clock.getElapsedTime();
 	}
 
 	sf::Texture::bind(NULL);
-
-	//phsx_thr.join();
 
 	return 0;
 }
