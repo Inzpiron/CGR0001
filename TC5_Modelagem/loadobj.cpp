@@ -17,22 +17,30 @@ int main(int argc, char **argv)
 	window.setVerticalSyncEnabled(true);
 
 	objl::Loader loader;
-	sf::Texture texture;
+	sf::Image img;
 
-	if (!loader.LoadFile("Modelos/CuboMagico/BlenderExport/magiccube.obj"))
+	if (!loader.LoadFile("Modelos/CuboMagico/BlenderExport/CuboMagico.obj"))
 	{
 		std::cerr << "Erro ao carregar modelo .obj\n";
 		return 1;
 	}
 
-	if (!texture.loadFromFile("Modelos/CuboMagico/tex_1024.bmp"))
+	if (!img.loadFromFile("Modelos/CuboMagico/tex_1024.bmp"))
 	{
 		std::cerr << "Erro ao carregar textura\n";
 		return 1;
 	}
+	
+	glEnable( GL_TEXTURE_2D );
 
-	sf::Texture::bind(&texture);
-
+	GLuint tex;
+	glGenTextures(1, &tex);
+	glBindTexture(GL_TEXTURE_2D, tex);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, img.getSize().x, img.getSize().y, 0, GL_RGBA, GL_UNSIGNED_BYTE, img.getPixelsPtr());
+	glBindTexture(GL_TEXTURE_2D, 0);
+	
 	GLfloat ar = (GLfloat)WH/(GLfloat)WW;
 
 	// Initialize OpenGL
@@ -40,11 +48,10 @@ int main(int argc, char **argv)
 	glLoadIdentity();
 	glMatrixMode(GL_PROJECTION);					// update projection
 	glLoadIdentity();
-	gluPerspective(45, ar, .01f, 100.0f);
+	gluPerspective(60, ar, .01f, 100.0f);
 	glMatrixMode(GL_MODELVIEW);
 	
 	/* Enable Texture Mapping ( NEW ) */
-	glEnable( GL_TEXTURE_2D );
 	glShadeModel( GL_SMOOTH );
 	glClearDepth( 1.0f );
 	glEnable( GL_DEPTH_TEST );
@@ -75,13 +82,14 @@ int main(int argc, char **argv)
  
 	glLightModeli(GL_LIGHT_MODEL_TWO_SIDE, GL_TRUE);
 
-	sf::Clock clock;
+	sf::Clock clock, uclock;
 	sf::Time dt;
 	sf::Event event;
 	
 	GLfloat x, y, z, nx, ny, nz, u, v;
 
 	clock.restart();
+	uclock.restart();
 	while (window.isOpen())
 	{
 		clock.restart();
@@ -96,7 +104,7 @@ int main(int argc, char **argv)
 				glViewport(0, 0, event.size.width, event.size.height);
 				glMatrixMode(GL_PROJECTION);					// update projection
 				glLoadIdentity();
-				gluPerspective(45, ar, .01f, 100.0f);
+				gluPerspective(60, ar, .01f, 100.0f);
 				glMatrixMode(GL_MODELVIEW);
 			}
 			else if (sf::Keyboard::isKeyPressed(sf::Keyboard::Escape))
@@ -106,30 +114,24 @@ int main(int argc, char **argv)
 		// Drawing
 		glClear(GL_DEPTH_BUFFER_BIT);
 		//glClearColor(0.0, 0.0, 0.0, 1.0);
-		window.clear(sf::Color::White);
+		window.clear(sf::Color::Black);
 	
-		glEnable( GL_TEXTURE_2D );
+		glBindTexture(GL_TEXTURE_2D, tex);
+		//sf::Texture::bind(&texture);
+		glEnable(GL_TEXTURE_2D);
 
 		glMatrixMode(GL_MODELVIEW);
 		glLoadIdentity();
-		gluLookAt( 4.0,  4.0,  4.0,
+		gluLookAt( 3.0,  3.0,  3.0,
 				   0.0,  0.0,  0.0,
 				   0.0,  1.0,  0.0);
 	
 		glPushMatrix();
-		glColor3f(0.1, 0.6, 0.08);
-		glBegin(GL_QUADS);
-			glNormal3f(  0.0, 1.0,   0.0);
-			glVertex3f(-30.0, 0.0, -30.0);
-			glVertex3f(-30.0, 0.0,  30.0);
-			glVertex3f( 30.0, 0.0,  30.0);
-			glVertex3f( 30.0, 0.0, -30.0);
-		glEnd();
-
 		glColor3f(1.0, 1.0, 1.0);
 		
-		sf::Texture::bind(&texture);
 		objl::Mesh curMesh;
+		glRotatef(uclock.getElapsedTime().asSeconds() * 50.f, 1.f, 0.f, 0.f);
+		glRotatef(uclock.getElapsedTime().asSeconds() * 30.f, 0.f, 1.f, 0.f);
 		for (int i = 0; i < loader.LoadedMeshes.size(); i++)
 		{
 			curMesh = loader.LoadedMeshes[i];
@@ -145,14 +147,19 @@ int main(int argc, char **argv)
 				nz = curMesh.Vertices[j].Normal.Z;
 				u  = curMesh.Vertices[j].TextureCoordinate.X;
 				v  = curMesh.Vertices[j].TextureCoordinate.Y;
-				glTexCoord2f(u, v);
-				glNormal3f(nx, ny, nz);
+				glTexCoord2f(v, u);
+				//glNormal3f(nx, ny, nz);
 				glVertex3f(x, y, z);
-				//std::cout << "Drawing vertex at " << x << " " << y << " " << z << std::endl;
+				std::cout << "Drawing vertex at " << x << " " << y << " " << z << std::endl;
 			}
 			glEnd();
 		}
+		
 		glPopMatrix();
+
+		glDisable(GL_TEXTURE_2D);
+		glBindTexture(GL_TEXTURE_2D, 0);
+		//sf::Texture::bind(NULL);
 
 		window.display();
 		printf("FPS = %d\n", (int)((double)1.0 / (double) dt.asSeconds()));
