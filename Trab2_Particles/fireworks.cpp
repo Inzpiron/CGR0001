@@ -86,7 +86,7 @@ int main(int argc, char **argv)
 					  sf::ContextSettings(24));
 
 	window.setVerticalSyncEnabled(false);
-	window.setFramerateLimit(144);
+	window.setFramerateLimit(180);
 
 	std::thread phsx_thr(physics, &window);
 
@@ -163,7 +163,7 @@ int main(int argc, char **argv)
 				glTranslatef(fw_s[i].x, fw_s[i].y, 0.0);
 				glRotatef((rand() % 360), 0, 0, 1);
 				glColor3fv(fw_s[i].color); //rainbow
-				amCircle(6.0 * (1.55 - fw_s[i].life.asSeconds()), 3);
+				amCircle(6.0 * (1.55 - fw_s[i].life.asSeconds()), fw_s[i].sides);
 			glPopMatrix();
 		}
 		mut_s.unlock();
