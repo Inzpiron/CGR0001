@@ -9,13 +9,12 @@
 
 int main(int argc, char **argv)
 {
-	sf::Window window(sf::VideoMode(WW, WH),
+	sf::RenderWindow window(sf::VideoMode(WW, WH),
 					  "Modelo do Blender!",
 					  sf::Style::Default,
 					  sf::ContextSettings(24));
 
-	window.setVerticalSyncEnabled(false);
-	window.setFramerateLimit(144);
+	window.setVerticalSyncEnabled(true);
 
 	objl::Loader loader;
 	sf::Texture texture;
@@ -105,14 +104,18 @@ int main(int argc, char **argv)
 		}
 
 		// Drawing
-		glMatrixMode(GL_MODELVIEW);
-		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-		glClearColor(0.0, 0.0, 0.0, 1.0);
-		glLoadIdentity();
+		glClear(GL_DEPTH_BUFFER_BIT);
+		//glClearColor(0.0, 0.0, 0.0, 1.0);
+		window.clear(sf::Color::White);
 	
+		glEnable( GL_TEXTURE_2D );
+
+		glMatrixMode(GL_MODELVIEW);
+		glLoadIdentity();
 		gluLookAt( 4.0,  4.0,  4.0,
 				   0.0,  0.0,  0.0,
 				   0.0,  1.0,  0.0);
+	
 		glPushMatrix();
 		glColor3f(0.1, 0.6, 0.08);
 		glBegin(GL_QUADS);
@@ -130,30 +133,29 @@ int main(int argc, char **argv)
 		for (int i = 0; i < loader.LoadedMeshes.size(); i++)
 		{
 			curMesh = loader.LoadedMeshes[i];
-			glBegin(GL_TRIANGLE_STRIP);
-			std::cout << curMesh.Vertices.size() << std::endl;
+			glBegin(GL_TRIANGLES);
+			//std::cout << curMesh.Vertices.size() << std::endl;
 			for (int j = 0; j < curMesh.Vertices.size(); j++)
 			{
-				x = curMesh.Vertices[j].Position.X;
-				y = curMesh.Vertices[j].Position.Y;
-				z = curMesh.Vertices[j].Position.Z;
+				x  = curMesh.Vertices[j].Position.X;
+				y  = curMesh.Vertices[j].Position.Y;
+				z  = curMesh.Vertices[j].Position.Z;
 				nx = curMesh.Vertices[j].Normal.X;
 				ny = curMesh.Vertices[j].Normal.Y;
 				nz = curMesh.Vertices[j].Normal.Z;
-				u = curMesh.Vertices[j].TextureCoordinate.X;
-				v = curMesh.Vertices[j].TextureCoordinate.Y;
-				//glTexCoord2f(u, v);
+				u  = curMesh.Vertices[j].TextureCoordinate.X;
+				v  = curMesh.Vertices[j].TextureCoordinate.Y;
+				glTexCoord2f(u, v);
 				glNormal3f(nx, ny, nz);
 				glVertex3f(x, y, z);
-				std::cout << "Drawing vertex at " << x << " " << y << " " << z << std::endl;
+				//std::cout << "Drawing vertex at " << x << " " << y << " " << z << std::endl;
 			}
 			glEnd();
 		}
 		glPopMatrix();
 
-		glFlush();
 		window.display();
-		printf("FPS=%4d\n", (int)((double)1.0 / (double) dt.asSeconds()));
+		printf("FPS = %d\n", (int)((double)1.0 / (double) dt.asSeconds()));
 		dt = clock.getElapsedTime();
 	}
 
