@@ -1,6 +1,6 @@
 FILE = ray.cpp
 OUT = ray
-FLAGS = -lm -fopenmp -lstdc++
+FLAGS = -lm -fopenmp -lsfml-system -lsfml-graphics -lsfml-window
 CC = g++
 
 ALL: $(FILE)
