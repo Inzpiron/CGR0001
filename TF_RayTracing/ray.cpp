@@ -3,17 +3,19 @@
 #include <cstdlib>
 #include <math.h>
 //#include <dos.h> // for outportb,inportb
+#include <SFML/System.hpp>
+#include <SFML/Graphics.hpp>
+#include <SFML/Window.hpp>
 
 // Raytracing is mathematics heady
 // Declaration of mathematical datatypes
-inline double dmin(double a, double b) {return a<b ? a : b;}
-
+inline double dmin(double a, double b) { return a<b ? a : b; }
 
 struct XYZ /* Three-component vector */
 {
 	double d[3];
 	// Declare operators handling vector in general:
-	inline void Set(double a, double b, double c) {d[0]=a; d[1]=b; d[2]=c;}
+	inline void Set(double a, double b, double c) { d[0]=a; d[1]=b; d[2]=c; }
 	#define do_op(o) \
 		inline void operator o##= (const XYZ& b) { for (unsigned n=0; n<3; n++) d[n] o##= b.d[n]; } \
 		inline void operator o##= (double b)     { for (unsigned n=0; n<3; n++) d[n] o##= b; } \
@@ -25,7 +27,7 @@ struct XYZ /* Three-component vector */
 	#undef do_op
 	XYZ operator- () const { XYZ tmp = {{ -d[0], -d[1], -d[2] }}; return tmp; }
 	XYZ Pow(double b) const
-		{ XYZ tmp = {{ pow(d[0],b), pow(d[1],b), pow(d2],b) }}; return tmp; }
+		{ XYZ tmp = {{ pow(d[0],b), pow(d[1],b), pow(d[2],b) }}; return tmp; }
 	// Operators handling geometrical vectors:
 	inline double Dot(const XYZ& b) const
 		{ return d[0]*b.d[0] + d[1]*b.d[1] + d[2]*b.d[2]; }
@@ -34,7 +36,7 @@ struct XYZ /* Three-component vector */
 	inline void Normalize()           { *this *= 1.0 / Len(); }
 	void MirrorAround(const XYZ& axis)
 	{
-		XYZ N = Axis; N.Normalize();
+		XYZ N = axis; N.Normalize();
 		double v = Dot(N);
 		*this = N * (v+v) - *this;
 	}
@@ -85,7 +87,7 @@ struct Matrix
 		double cxcz = Cx*Cz, sxcz = Sx*Cz;
 		Matrix result = {{ {{ Cy*Cz, Cy*Sz, -Sy }},
 						   {{ sxcz*Sy - cxsz, sxsz*Sy + cxcz, Sx*Cy }},
-						   {{ cxcz*Sy + sxsz, cxsz*Sy = sxcz, Cx*Cy }} }};
+						   {{ cxcz*Sy + sxsz, cxsz*Sy + sxcz, Cx*Cy }} }};
 		*this = result;
 	}
 	void Transform(XYZ& vec)
@@ -175,8 +177,8 @@ int RayFindObstacle
 			// Does the ray coincide with the sphere?
 			if (SQ < 1e-6) continue;
 			// Determine where exactly
-			double SQt = sqrt(SQ).
-				Dist = dmin(-DV-DQt, -dv+SQt) / D2;
+			double SQt = sqrt(SQ),
+				Dist = dmin(-DV-SQt, -DV+SQt) / D2;
 			if (Dist < 1e-6  || Dist >= HitDist)
 				continue;
 			HitType = 1; HitIndex = i;
@@ -194,7 +196,7 @@ int RayFindObstacle
 			double
 				D2 = Planes[i].normal.Dot(eye),
 				Dist = (D2 + Planes[i].offset) / DV;
-			if (Dist < 1e-6 || dist >= HitDist)
+			if (Dist < 1e-6 || Dist >= HitDist)
 				continue;
 			HitType = 0; HitIndex = i;
 			HitDist = Dist;
@@ -207,7 +209,7 @@ int RayFindObstacle
 }
 
 const unsigned NumArealightVectors = 20;
-XYZ ArealightVectors[NumAreaLightVectors];
+XYZ ArealightVectors[NumArealightVectors];
 void InitArealightVectors()
 {
 	for (unsigned i=0; i<NumArealightVectors; i++)
@@ -237,7 +239,7 @@ void RayTrace(XYZ& resultcolor, const XYZ& eye, const XYZ& dir, int k)
 		XYZ DiffuseLight = {{0,0,0}}, SpecularLight = {{0,0,0}};
 		XYZ Pigment = {{1, 0.98, 0.94}}; // default pigment
 		for (unsigned i=0; i<NumLights; i++)
-			for (unsigned j=0; j<NumArealightVector; j++)
+			for (unsigned j=0; j<NumArealightVectors; j++)
 			{
 				XYZ V((Lights[i].where + ArealightVectors[j]) - HitLoc);
 				double LightDist = V.Len();
@@ -250,9 +252,10 @@ void RayTrace(XYZ& resultcolor, const XYZ& eye, const XYZ& dir, int k)
 				{
 					double ShadowDist = LightDist - 1e-4;
 					XYZ a,b;
-					int q,t = RayFindObstacle(HitLoc + V*1e-4, V, ShadowDist, q,
+					int q,t = RayFindObstacle(HitLoc + V*1e-4, V, ShadowDist, q, a, b);
 					if (t == -1) // No obstacle occluding the light?
 						DiffuseLight += Lights[i].colour * DiffuseEffect;
+				}
 			}
 		if (k > 1)
 		{
@@ -278,6 +281,7 @@ void RayTrace(XYZ& resultcolor, const XYZ& eye, const XYZ& dir, int k)
 				SpecularLight *= 0.34;
 		}
 		resultcolor = (DiffuseLight + SpecularLight) * Pigment;
+	}
 }
 
 
@@ -315,9 +319,13 @@ void InitDither()
 */
 
 /* MAIN PROGRAM */
-int main()
-{
+int main(int argc, char **argv) {
 	/* TODO create window, set 640x480 */
+
+	const unsigned W = 640, H = 480;
+	
+	sf::RenderWindow window(sf::VideoMode(W, H), "MultiThreaded SFML PathTracing");
+	window.setVerticalSyncEnabled(true);
 
 	//InitDither();
 	InitArealightVectors();
@@ -329,8 +337,6 @@ int main()
 	double zoom = 46.0, zoomdelta = 0.99;
 	double contrast = 32, contrast_offset = -0.17;
 
-	const unsigned W = 640, H = 480;
-	
 	for (unsigned frameno = 0; frameno < 9300; frameno++)
 	{
 		// Put camera between the central sphere and the walls
@@ -361,7 +367,7 @@ int main()
 			#pragma omp critical
 			{
 				// Update frame luminosity info for automatic contrast adjuster
-				double lum = campux.Luma();
+				double lum = campix.Luma();
 				#pragma omp flush(thisframe_min,thisframe_max)
 				if (lum < thisframe_min) thisframe_min = lum;
 				if (lum > thisframe_max) thisframe_max = lum;
@@ -371,8 +377,8 @@ int main()
 				campix = (campix + contrast_offset) * contrast;
 				// Clamp, and compensate for display gamma (for dithering)
 				campix.ClampWithDesaturation();
-				XYZ campixG = campix.Pow(Gamma);
-				XYZ qtryG = campixG;
+				//XYZ campixG = campix.Pow(Gamma);
+				//XYZ qtryG = campixG;
 
 				/* Não utilizado, temos TrueColor aqui */
 				// Create candidate table for dithering
