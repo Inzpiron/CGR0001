@@ -287,138 +287,129 @@ void RayTrace(XYZ& resultcolor, const XYZ& eye, const XYZ& dir, int k)
 	}
 }
 
+XYZ camangle	  = {{0,0,0}};
+XYZ camangledelta = {{-.005, -.011, -.017}};
+XYZ camlook       = {{0,0,0}};
+XYZ camlookdelta  = {{-.001, .005, .004}};
+XYZ campos        = {{ 0.0, -3.0, 16.0}};
+
+//double zoom = 46.0, zoomdelta = 0.99;
+double zoom = 3.0, zoomdelta = 0.99;
+double contrast = 6.2, contrast_offset = -0.12;
+
 /* MAIN PROGRAM */
 void render(unsigned W, unsigned H, sf::Uint8 *pixels)
 {
-	double AR = double(W)/double(H);
+	double AR = W/double(H);
 
 	InitArealightVectors();
-	XYZ camangle	  = { {0,0,0} };
-	XYZ camangledelta = { {-.005, -.011, -.017} };
-	//XYZ camlook	   = { {0,0,0} };
-	XYZ camlook       = {{0,0,0}};
-	XYZ camlookdelta  = { {-.001, .005, .004} };
 
-	//double zoom = 46.0, zoomdelta = 0.99;
-	double zoom = 3.0, zoomdelta = 0.99;
-	double contrast = 6.2, contrast_offset = -0.12;
+	// Put camera between the central sphere and the walls
+	// Rotate it around the center
+	Matrix camrotatematrix, camlookmatrix;
+	camrotatematrix.InitRotate(camangle);
+	camrotatematrix.Transform(campos);
+	camlookmatrix.InitRotate(camlook);
 
-	sf::Event event;
-	for(unsigned frameno=0; frameno<9300; ++frameno)
-	{
-		fprintf(stderr, "Begins frame %u; contrast %g, contrast offset %g\n",
-			frameno,contrast,contrast_offset);
+	// Determine the contrast ratio for this frame's pixels
+	double thisframe_min = 100;
+	double thisframe_max = -100;
 
-		// Put camera between the central sphere and the walls
-		XYZ campos = { { 0.0, -3.0, 16.0} };
-		// Rotate it around the center
-		Matrix camrotatematrix, camlookmatrix;
-		camrotatematrix.InitRotate(camangle);
-		camrotatematrix.Transform(campos);
-		camlookmatrix.InitRotate(camlook);
+  #pragma omp parallel for collapse(2)
+	for(unsigned y=0; y<H; ++y)
+		for(unsigned x=0; x<W; ++x)
+		{
+			XYZ camray = {{ x / double(W) - 0.5,
+							y / double(H) - 0.5,
+							zoom }};
+			camray.d[0] *= AR; // Aspect ratio correction
+			camray.Normalize();
+			camlookmatrix.Transform(camray);
+			XYZ campix;
+			RayTrace(campix, campos, camray, MAXTRACE);
+			campix *= 0.5;
+		  #pragma omp critical
+		  {
+			// Update frame luminosity info for automatic contrast adjuster
+			double lum = campix.Luma();
+			#pragma omp flush(thisframe_min,thisframe_max)
+			if(lum < thisframe_min) thisframe_min = lum;
+			if(lum > thisframe_max) thisframe_max = lum;
+			#pragma omp flush(thisframe_min,thisframe_max)
+		  }
+			// Exaggerate the colors to bring contrast better forth
+			campix = (campix + contrast_offset) * contrast;
+			// Clamp, and compensate for display gamma (for dithering)
+			campix.ClampWithDesaturation();
+			//XYZ campixG = campix.Pow(Gamma);
+			//XYZ qtryG = campixG;
 
-		// Determine the contrast ratio for this frame's pixels
-		double thisframe_min = 100;
-		double thisframe_max = -100;
-
-	  #pragma omp parallel for collapse(2)
-		for(unsigned y=0; y<H; ++y)
-			for(unsigned x=0; x<W; ++x)
+			// TODO Draw pixel
 			{
-				XYZ camray = { { x / double(W) - 0.5,
-								 y / double(H) - 0.5,
-								 zoom } };
-				camray.d[0] *= AR; // Aspect ratio correction
-				camray.Normalize();
-				camlookmatrix.Transform(camray);
-				XYZ campix;
-				RayTrace(campix, campos, camray, MAXTRACE);
-				campix *= 0.5;
-			  #pragma omp critical
-			  {
-				// Update frame luminosity info for automatic contrast adjuster
-				double lum = campix.Luma();
-				#pragma omp flush(thisframe_min,thisframe_max)
-				if(lum < thisframe_min) thisframe_min = lum;
-				if(lum > thisframe_max) thisframe_max = lum;
-				#pragma omp flush(thisframe_min,thisframe_max)
-			  }
-				// Exaggerate the colors to bring contrast better forth
-				campix = (campix + contrast_offset) * contrast;
-				// Clamp, and compensate for display gamma (for dithering)
-				campix.ClampWithDesaturation();
-				//XYZ campixG = campix.Pow(Gamma);
-				//XYZ qtryG = campixG;
-
-				// TODO Draw pixel
-				{
-					//printf("Cor: %f %f %f\n", campix.d[0], campix.d[1], campix.d[2]);
+				//printf("Cor: %f %f %f\n", campix.d[0], campix.d[1], campix.d[2]);
 					
-					pixels[((y*W) + x)*4 + 0] = unsigned(campix.d[0]*255); // Red
-					pixels[((y*W) + x)*4 + 1] = unsigned(campix.d[1]*255); // Green
-					pixels[((y*W) + x)*4 + 2] = unsigned(campix.d[2]*255); // Blue
-					pixels[((y*W) + x)*4 + 3] = 255; // Alpha
+				pixels[((y*W) + x)*4 + 0] = unsigned(campix.d[0]*255); // Red
+				pixels[((y*W) + x)*4 + 1] = unsigned(campix.d[1]*255); // Green
+				pixels[((y*W) + x)*4 + 2] = unsigned(campix.d[2]*255); // Blue
+				pixels[((y*W) + x)*4 + 3] = 255; // Alpha
 				
-					/*
-					sf::Color px((campix.d[0] * 255),
-								 (campix.d[1] * 255),
-								 (campix.d[2] * 255));
-					image.setPixel(x, y, px);
-					*/
-				}
+				/*
+				sf::Color px((campix.d[0] * 255),
+							 (campix.d[1] * 255),
+							 (campix.d[2] * 255));
+				image.setPixel(x, y, px);
+				*/
 			}
-
-		if (toFile)
-		{
-			image.create(W, H, pixels);
-			image.saveToFile(outfile);
-			break;
-		}
-		else
-		{
-			// Atualizar textura
-			texture.update(pixels);
-			// Apresentar resultado
-			window.draw(sprite);
-			window.display();
 		}
 
-		printf("Terminado frame %4d\n", frameno);
-		
-		// Tweak coordinates / camera parameters for the next frame
-		double much = 1.0;
-
-		// In the beginning, do some camera action (play with zoom)
-		if(zoom <= 1.1)
-			zoom = 1.1;
-		else
-		{
-			if(zoom > 40) { if(zoomdelta > 0.95) zoomdelta -= 0.001; }
-			else if(zoom < 3) { if(zoomdelta < 0.99) zoomdelta += 0.001; }
-			zoom *= zoomdelta;
-			much = 1.1 / pow(zoom/1.1, 3);
-		}
-
-		// Update the rotation angle
-		//camlook  += camlookdelta * much;
-		//camangle += camangledelta * much;
-
-		// Dynamically readjust the contrast based on the contents
-		// of the last frame
-		double middle = (thisframe_min + thisframe_max) * 0.5;
-		double span   = (thisframe_max - thisframe_min);
-		thisframe_min = middle - span*0.60; // Avoid dark tones
-		thisframe_max = middle + span*0.37; // Emphasize bright tones
-		double new_contrast_offset = -thisframe_min;
-		double new_contrast		= 1 / (thisframe_max - thisframe_min);
-		// Avoid too abrupt changes, though
-		double l = 0.85;
-		if(frameno == 0) l = 0.7;
-		contrast_offset = (contrast_offset*l + new_contrast_offset*(1.0-l));
-		contrast		= (contrast*l + new_contrast*(1.0-l));
+	if (toFile)
+	{
+		image.create(W, H, pixels);
+		image.saveToFile(outfile);
+		break;
+	}
+	else
+	{
+		// Atualizar textura
+		texture.update(pixels);
+		// Apresentar resultado
+		window.draw(sprite);
+		window.display();
 	}
 
-	return 0;
+	printf("Terminado frame %4d\n", frameno);
+		
+	// Tweak coordinates / camera parameters for the next frame
+	double much = 1.0;
+
+	// In the beginning, do some camera action (play with zoom)
+	if(zoom <= 1.1)
+		zoom = 1.1;
+	else
+	{
+		if(zoom > 40) { if(zoomdelta > 0.95) zoomdelta -= 0.001; }
+		else if(zoom < 3) { if(zoomdelta < 0.99) zoomdelta += 0.001; }
+		zoom *= zoomdelta;
+		much = 1.1 / pow(zoom/1.1, 3);
+	}
+
+	// Update the rotation angle
+	//camlook  += camlookdelta * much;
+	//camangle += camangledelta * much;
+
+	// Dynamically readjust the contrast based on the contents
+	// of the last frame
+	double middle = (thisframe_min + thisframe_max) * 0.5;
+	double span   = (thisframe_max - thisframe_min);
+	thisframe_min = middle - span*0.60; // Avoid dark tones
+	thisframe_max = middle + span*0.37; // Emphasize bright tones
+	double new_contrast_offset = -thisframe_min;
+	double new_contrast		= 1 / (thisframe_max - thisframe_min);
+	// Avoid too abrupt changes, though
+	double l = 0.85;
+	if(frameno == 0) l = 0.7;
+	contrast_offset = (contrast_offset*l + new_contrast_offset*(1.0-l));
+	contrast		= (contrast*l + new_contrast*(1.0-l));
 }
 /* There. The previous part was just basic mathematics. Vector and matrix mathematics. */
 
