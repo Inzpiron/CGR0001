@@ -163,24 +163,30 @@ void RayTrace(XYZ& resultcolor, const XYZ& eye, const XYZ& dir, int k)
 			XYZ V(-dir); V.MirrorAround(HitNormal);
 			RayTrace(SpecularLight, HitLoc + V*1e-4, V, k-1);
 		}
+
+		// AQUI COMEÇA CÁLCULO DE LUMINOSIDADE BASEADO EM MATERIAIS
+
 		switch(HitType)
 		{
 			case 0: // plane
 				DiffuseLight *= 0.9;
 				SpecularLight *= 0.5;
 				// Color the different walls differently
-				switch(HitIndex % 3)
+				switch(HitIndex % 4)
 				{
 					case 0: Pigment.Set(0.9, 0.7, 0.6); break;
 					case 1: Pigment.Set(0.6, 0.7, 0.7); break;
 					case 2: Pigment.Set(0.5, 0.8, 0.3); break;
+					case 3: Pigment.Set(0.1, 0.1, 0.1); break;
 				}
 				break;
 			case 1: // sphere
 				DiffuseLight  *= 1.0;
-				SpecularLight  *= 0.34;
+				SpecularLight  *= 0.74;
 		}
 		resultcolor = (DiffuseLight + SpecularLight) * Pigment;
+
+		// AQUI TERMINA CÁLCULO DE LUMINOSIDADE BASEADO EM MATERIAIS
 	}
 }
 
@@ -199,7 +205,8 @@ int main(int argc, char **argv) // <<<<----- boa pratica
 	double AR = double(W)/double(H);
 
 	sf::RenderWindow window(sf::VideoMode(W, H), "MultiThreaded SFML PathTracing", sf::Style::None);
-	window.setVerticalSyncEnabled(true);
+	if (toFile) window.setVisible(false);
+	else window.setVerticalSyncEnabled(true);
 
 	sf::Image image;
 	image.create(W, H, sf::Color::Black);
@@ -220,20 +227,22 @@ int main(int argc, char **argv) // <<<<----- boa pratica
 	InitArealightVectors();
 	XYZ camangle	  = { {0,0,0} };
 	XYZ camangledelta = { {-.005, -.011, -.017} };
-	XYZ camlook	   = { {0,0,0} };
+	//XYZ camlook	   = { {0,0,0} };
+	XYZ camlook       = {{0,0,0}};
 	XYZ camlookdelta  = { {-.001, .005, .004} };
 
 	//double zoom = 46.0, zoomdelta = 0.99;
 	double zoom = 3.0, zoomdelta = 0.99;
 	double contrast = 6.2, contrast_offset = -0.12;
 
+	sf::Event event;
 	for(unsigned frameno=0; frameno<9300; ++frameno)
 	{
 		fprintf(stderr, "Begins frame %u; contrast %g, contrast offset %g\n",
 			frameno,contrast,contrast_offset);
 
 		// Put camera between the central sphere and the walls
-		XYZ campos = { { 0.0, 5.0, 16.0} };
+		XYZ campos = { { 0.0, -3.0, 16.0} };
 		// Rotate it around the center
 		Matrix camrotatematrix, camlookmatrix;
 		camrotatematrix.InitRotate(camangle);
@@ -244,7 +253,6 @@ int main(int argc, char **argv) // <<<<----- boa pratica
 		double thisframe_min = 100;
 		double thisframe_max = -100;
 
-		sf::Event event;
 		while (window.pollEvent(event))
 		{
 			// "close requested" event: we close the window
@@ -299,19 +307,19 @@ int main(int argc, char **argv) // <<<<----- boa pratica
 				}
 			}
 
-		if (!toFile)
+		if (toFile)
+		{
+			image.create(W, H, pixels);
+			image.saveToFile(outfile);
+			break;
+		}
+		else
 		{
 			// Atualizar textura
 			texture.update(pixels);
 			// Apresentar resultado
 			window.draw(sprite);
 			window.display();
-		}
-		else
-		{
-			image.create(W, H, pixels);
-			image.saveToFile(outfile);
-			break;
 		}
 
 		printf("Terminado frame %4d\n", frameno);
@@ -331,8 +339,8 @@ int main(int argc, char **argv) // <<<<----- boa pratica
 		}
 
 		// Update the rotation angle
-		camlook  += camlookdelta * much;
-		camangle += camangledelta * much;
+		//camlook  += camlookdelta * much;
+		//camangle += camangledelta * much;
 
 		// Dynamically readjust the contrast based on the contents
 		// of the last frame
