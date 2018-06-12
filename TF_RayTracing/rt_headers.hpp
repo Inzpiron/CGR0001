@@ -297,6 +297,10 @@ XYZ campos        = {{ 0.0, -3.0, 16.0}};
 double zoom = 3.0, zoomdelta = 0.99;
 double contrast = 6.2, contrast_offset = -0.12;
 
+// Determine the contrast ratio for this frame's pixels
+double thisframe_min = 100;
+double thisframe_max = -100;
+
 /* MAIN PROGRAM */
 void render(unsigned W, unsigned H, sf::Uint8 *pixels)
 {
@@ -311,12 +315,9 @@ void render(unsigned W, unsigned H, sf::Uint8 *pixels)
 	camrotatematrix.Transform(campos);
 	camlookmatrix.InitRotate(camlook);
 
-	// Determine the contrast ratio for this frame's pixels
-	double thisframe_min = 100;
-	double thisframe_max = -100;
-
   #pragma omp parallel for collapse(2)
 	for(unsigned y=0; y<H; ++y)
+	{
 		for(unsigned x=0; x<W; ++x)
 		{
 			XYZ camray = {{ x / double(W) - 0.5,
@@ -344,37 +345,14 @@ void render(unsigned W, unsigned H, sf::Uint8 *pixels)
 			//XYZ campixG = campix.Pow(Gamma);
 			//XYZ qtryG = campixG;
 
-			// TODO Draw pixel
+			// Draw pixel
 			{
-				//printf("Cor: %f %f %f\n", campix.d[0], campix.d[1], campix.d[2]);
-					
 				pixels[((y*W) + x)*4 + 0] = unsigned(campix.d[0]*255); // Red
 				pixels[((y*W) + x)*4 + 1] = unsigned(campix.d[1]*255); // Green
 				pixels[((y*W) + x)*4 + 2] = unsigned(campix.d[2]*255); // Blue
 				pixels[((y*W) + x)*4 + 3] = 255; // Alpha
-				
-				/*
-				sf::Color px((campix.d[0] * 255),
-							 (campix.d[1] * 255),
-							 (campix.d[2] * 255));
-				image.setPixel(x, y, px);
-				*/
 			}
 		}
-
-	if (toFile)
-	{
-		image.create(W, H, pixels);
-		image.saveToFile(outfile);
-		break;
-	}
-	else
-	{
-		// Atualizar textura
-		texture.update(pixels);
-		// Apresentar resultado
-		window.draw(sprite);
-		window.display();
 	}
 
 	printf("Terminado frame %4d\n", frameno);
@@ -383,8 +361,7 @@ void render(unsigned W, unsigned H, sf::Uint8 *pixels)
 	double much = 1.0;
 
 	// In the beginning, do some camera action (play with zoom)
-	if(zoom <= 1.1)
-		zoom = 1.1;
+	if (zoom <= 1.1) zoom = 1.1;
 	else
 	{
 		if(zoom > 40) { if(zoomdelta > 0.95) zoomdelta -= 0.001; }
@@ -394,8 +371,8 @@ void render(unsigned W, unsigned H, sf::Uint8 *pixels)
 	}
 
 	// Update the rotation angle
-	//camlook  += camlookdelta * much;
-	//camangle += camangledelta * much;
+	camlook  += camlookdelta * much;
+	camangle += camangledelta * much;
 
 	// Dynamically readjust the contrast based on the contents
 	// of the last frame
