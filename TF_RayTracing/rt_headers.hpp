@@ -4,6 +4,7 @@
 #include <stdio.h>
 #include <math.h>
 #include <stdlib.h>
+#include <time.h>
 #include <SFML/System.hpp>
 #include <SFML/Graphics.hpp>
 #include <SFML/Window.hpp>
@@ -301,19 +302,12 @@ double contrast = 6.2, contrast_offset = -0.12;
 double thisframe_min = 100;
 double thisframe_max = -100;
 
+Matrix camrotatematrix, camlookmatrix;
+
 /* MAIN PROGRAM */
 void render(unsigned W, unsigned H, sf::Uint8 *pixels)
 {
 	double AR = W/double(H);
-
-	InitArealightVectors();
-
-	// Put camera between the central sphere and the walls
-	// Rotate it around the center
-	Matrix camrotatematrix, camlookmatrix;
-	camrotatematrix.InitRotate(camangle);
-	camrotatematrix.Transform(campos);
-	camlookmatrix.InitRotate(camlook);
 
   #pragma omp parallel for collapse(2)
 	for(unsigned y=0; y<H; ++y)
@@ -355,8 +349,6 @@ void render(unsigned W, unsigned H, sf::Uint8 *pixels)
 		}
 	}
 
-	printf("Terminado frame %4d\n", frameno);
-		
 	// Tweak coordinates / camera parameters for the next frame
 	double much = 1.0;
 
@@ -384,10 +376,9 @@ void render(unsigned W, unsigned H, sf::Uint8 *pixels)
 	double new_contrast		= 1 / (thisframe_max - thisframe_min);
 	// Avoid too abrupt changes, though
 	double l = 0.85;
-	if(frameno == 0) l = 0.7;
+	//if(frameno == 0) l = 0.7;
 	contrast_offset = (contrast_offset*l + new_contrast_offset*(1.0-l));
 	contrast		= (contrast*l + new_contrast*(1.0-l));
 }
-/* There. The previous part was just basic mathematics. Vector and matrix mathematics. */
 
 #endif

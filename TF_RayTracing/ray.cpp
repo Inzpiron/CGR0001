@@ -1,7 +1,7 @@
 #include "rt_headers.hpp"
 
 /* MAIN PROGRAM */
-int main(int argc, char **argv) // <<<<----- boa pratica
+int main(int argc, char **argv)
 {
 	bool toFile = false;
 	char outfile[256];
@@ -30,7 +30,6 @@ int main(int argc, char **argv) // <<<<----- boa pratica
 	for (unsigned i=0; i < W*H*4; i++) pixels[i] = 0;
 
 	texture.update(pixels);
-	//texture.update(image);
 	sprite.setTexture(texture);
 
 	InitArealightVectors();
@@ -38,17 +37,24 @@ int main(int argc, char **argv) // <<<<----- boa pratica
 	//double zoom = 46.0, zoomdelta = 0.99;
 	zoom = 3.0; zoomdelta = 0.99;
 	contrast = 6.2; contrast_offset = -0.12;
+	// Redefine camera parameters
+	campos.Set(0.0, -3.0, 16.0);
+	camangle.Set(0,0,0);
+	camangledelta.Set(-.005, -.011, -.017);
+	camlook.Set(0,0,0);
+	camlookdelta.Set(-.001, .005, .004);
+
+	double delay;
+	clock_t before;
 
 	sf::Event event;
 	for(unsigned frameno=0; frameno<9300; ++frameno)
 	{
-		fprintf(stderr, "Begins frame %u; contrast %g, contrast offset %g\n",
+		fprintf(stderr, "Frame %u; Contrast %g, offset %g; ",
 			frameno,contrast,contrast_offset);
+		before = clock();
 
-		// Put camera between the central sphere and the walls
-		XYZ campos = { { 0.0, -3.0, 16.0} };
 		// Rotate it around the center
-		Matrix camrotatematrix, camlookmatrix;
 		camrotatematrix.InitRotate(camangle);
 		camrotatematrix.Transform(campos);
 		camlookmatrix.InitRotate(camlook);
@@ -81,7 +87,8 @@ int main(int argc, char **argv) // <<<<----- boa pratica
 			window.display();
 		}
 
-		printf("Terminado frame %4d\n", frameno);
+		delay = (clock() - before) / double(CLOCKS_PER_SEC);
+		printf("FrameTime %.4fms\n", delay);
 		
 		// Tweak coordinates / camera parameters for the next frame
 		double much = 1.0;
