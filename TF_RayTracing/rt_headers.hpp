@@ -309,6 +309,15 @@ void render(unsigned W, unsigned H, sf::Uint8 *pixels)
 {
 	double AR = W/double(H);
 
+	// Rotate it around the center
+	camrotatematrix.InitRotate(camangle);
+	camrotatematrix.Transform(campos);
+	camlookmatrix.InitRotate(camlook);
+
+	// Determine the contrast ratio for this frame's pixels
+	thisframe_min = 100;
+	thisframe_max = -100;
+
   #pragma omp parallel for collapse(2)
 	for(unsigned y=0; y<H; ++y)
 	{

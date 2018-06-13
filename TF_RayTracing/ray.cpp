@@ -14,7 +14,7 @@ int main(int argc, char **argv)
 
 	double AR = double(W)/double(H);
 
-	sf::RenderWindow window(sf::VideoMode(W, H), "MultiThreaded SFML PathTracing", sf::Style::None);
+	sf::RenderWindow window(sf::VideoMode(W, H), "MultiThreaded SFML PathTracing"/*, sf::Style::None*/);
 	if (toFile) window.setVisible(false);
 	else window.setVerticalSyncEnabled(true);
 
@@ -38,7 +38,7 @@ int main(int argc, char **argv)
 	zoom = 3.0; zoomdelta = 0.99;
 	contrast = 6.2; contrast_offset = -0.12;
 	// Redefine camera parameters
-	campos.Set(0.0, -3.0, 16.0);
+	campos.Set(0.0, 10.0, 7.0);
 	camangle.Set(0,0,0);
 	camangledelta.Set(-.005, -.011, -.017);
 	camlook.Set(0,0,0);
@@ -52,16 +52,6 @@ int main(int argc, char **argv)
 	{
 		fprintf(stderr, "Frame %u; Contrast %g, offset %g; ",
 			frameno,contrast,contrast_offset);
-		before = clock();
-
-		// Rotate it around the center
-		camrotatematrix.InitRotate(camangle);
-		camrotatematrix.Transform(campos);
-		camlookmatrix.InitRotate(camlook);
-
-		// Determine the contrast ratio for this frame's pixels
-		double thisframe_min = 100;
-		double thisframe_max = -100;
 
 		while (window.pollEvent(event))
 		{
@@ -69,6 +59,8 @@ int main(int argc, char **argv)
 			if (event.type == sf::Event::Closed)
 				window.close();
 		}
+
+		before = clock();
 
 		render(W, H, pixels);
 
@@ -88,39 +80,7 @@ int main(int argc, char **argv)
 		}
 
 		delay = (clock() - before) / double(CLOCKS_PER_SEC);
-		printf("FrameTime %.4fms\n", delay);
-		
-		// Tweak coordinates / camera parameters for the next frame
-		double much = 1.0;
-
-		// In the beginning, do some camera action (play with zoom)
-		if(zoom <= 1.1)
-			zoom = 1.1;
-		else
-		{
-			if(zoom > 40) { if(zoomdelta > 0.95) zoomdelta -= 0.001; }
-			else if(zoom < 3) { if(zoomdelta < 0.99) zoomdelta += 0.001; }
-			zoom *= zoomdelta;
-			much = 1.1 / pow(zoom/1.1, 3);
-		}
-
-		// Update the rotation angle
-		//camlook  += camlookdelta * much;
-		//camangle += camangledelta * much;
-
-		// Dynamically readjust the contrast based on the contents
-		// of the last frame
-		double middle = (thisframe_min + thisframe_max) * 0.5;
-		double span   = (thisframe_max - thisframe_min);
-		thisframe_min = middle - span*0.60; // Avoid dark tones
-		thisframe_max = middle + span*0.37; // Emphasize bright tones
-		double new_contrast_offset = -thisframe_min;
-		double new_contrast		= 1 / (thisframe_max - thisframe_min);
-		// Avoid too abrupt changes, though
-		double l = 0.85;
-		if(frameno == 0) l = 0.7;
-		contrast_offset = (contrast_offset*l + new_contrast_offset*(1.0-l));
-		contrast		= (contrast*l + new_contrast*(1.0-l));
+		printf("FrameTime %.4fs\n", delay);
 	}
 
 	return 0;
