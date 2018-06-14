@@ -10,6 +10,7 @@
 #include <SFML/Graphics.hpp>
 #include <SFML/Window.hpp>
 #include "utilities.hpp"
+#include "objects.hpp"
 
 unsigned MAXTRACE = 2; // Maximum trace level
 

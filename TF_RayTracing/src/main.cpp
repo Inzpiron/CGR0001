@@ -1,4 +1,5 @@
 #include "rt_headers.hpp"
+#include "scene.hpp"
 #include <iostream>
 #include <thread>
 #include <mutex>
@@ -183,6 +184,7 @@ int main(int argc, char **argv)
 	sprite.setTexture(texture);
 
 	InitArealightVectors();
+	InitDefaultScene();
 
 	//double zoom = 46.0, zoomdelta = 0.99;
 	zoom = 2.2; //zoomdelta = 0.99;
