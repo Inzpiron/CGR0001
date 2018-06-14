@@ -14,7 +14,7 @@ int main(int argc, char **argv)
 
 	double AR = double(W)/double(H);
 
-	sf::RenderWindow window(sf::VideoMode(W, H), "MultiThreaded SFML PathTracing"/*, sf::Style::None*/);
+	sf::RenderWindow window(sf::VideoMode(W, H), "MultiThreaded SFML PathTracing", sf::Style::Titlebar);
 	if (toFile) window.setVisible(false);
 	else window.setVerticalSyncEnabled(true);
 
@@ -46,24 +46,32 @@ int main(int argc, char **argv)
 
 	double delay;
 	clock_t before;
+	std::stringstream command;
 
 	sf::Event event;
-	for(unsigned frameno=0; frameno<9300; ++frameno)
+	while (window.isOpen())
 	{
-		fprintf(stderr, "Frame %u; Contrast %g, offset %g; ",
-			frameno,contrast,contrast_offset);
-
+		//fprintf(stderr, "Frame %u; Contrast %2.4g, offset %1.4g; ",
+		//	frameno,contrast,contrast_offset);
 		while (window.pollEvent(event))
 		{
 			// "close requested" event: we close the window
 			if (event.type == sf::Event::Closed)
+			{
 				window.close();
+				break;
+			}
 		}
 
+		getline(std::cin, command);
+		command >> op; op.toLower();
+		
+		// Select operation
+
 		before = clock();
-
 		render(W, H, pixels);
-
+		delay = (clock() - before) / double(CLOCKS_PER_SEC);
+		
 		if (toFile)
 		{
 			image.create(W, H, pixels);
@@ -79,7 +87,6 @@ int main(int argc, char **argv)
 			window.display();
 		}
 
-		delay = (clock() - before) / double(CLOCKS_PER_SEC);
 		printf("FrameTime %.4fs\n", delay);
 	}
 
