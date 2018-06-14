@@ -1,4 +1,4 @@
-FILE = src/ray.cpp
+FILE = src/main.cpp
 OUT = ray
 FLAGS = -lm -fopenmp -lsfml-system -lsfml-graphics -lsfml-window -lpthread -std=c++11
 CC = g++

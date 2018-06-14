@@ -11,6 +11,8 @@
 #include <SFML/Window.hpp>
 #include "utilities.hpp"
 
+unsigned MAXTRACE = 2; // Maximum trace level
+
 // Raytracing is mathematics-heavy. Declare mathematical datatypes
 inline double dmin(double a,double b) { return a<b ? a : b; }
 struct XYZ
@@ -99,56 +101,6 @@ struct Matrix
 
 
 // Rendering procedure
-
-// Declarations for scene description
-// Walls are planes. Planes have a
-// normal vector and a distance.
-const struct Plane
-{ XYZ normal; double offset; }
-Planes[] =
-{
-// Declare six planes, each looks 
-// towards origo and is 30 units away.
-	{ {{0,0,-1}}, -90 },
-	{ {{0, 1,0}}, -30 },
-	{ {{0,-1,0}}, -30 },
-	{ {{ 1,0,0}}, -30 },
-	{ {{0, 0,1}}, -90 },
-	{ {{-1,0,0}}, -30 }
-};
-const struct Sphere
-{ XYZ center; double radius; }
-Spheres[] =
-{
-// Declare a few spheres.
-	{ {{0,0,0}}, 7 },
-	{ {{19.4, -19.4, 0}}, 2.1 },
-	{ {{-19.4, 19.4, 0}}, 2.1 },
-	{ {{13.1, 5.1, 0}}, 1.1 },
-	{ {{ -5.1, -13.1, 0}}, 1.1 },
-	{ {{-30,30,15}}, 11},
-	{ {{15,-30,30}}, 6},
-	{ {{30,15,-30}}, 6}
-};
-// Declare lightsources. A lightsource
-// has a location and a RGB color.
-const struct LightSource
-{ XYZ where, colour; }
-Lights[] =
-{
-	{ {{-28,-14, 3}}, {{.4, .51, .9}} },
-	{ {{-29,-29,-29}}, {{.95, .1, .1}} },
-	{ {{ 14, 29,-14}}, {{.8, .8, .8}} },
-	{ {{ 29, 29, 29}}, {{1,1,1}} },
-	{ {{ 28,  0, 29}}, {{.5, .6,  .1}} }
-};
-#define NElems(x) sizeof(x)/sizeof(*x)
-const unsigned
-	NumPlanes = NElems(Planes),
-	NumSpheres = NElems(Spheres),
-	NumLights = NElems(Lights);
-unsigned MAXTRACE = 2; // Maximum trace level
-
 /* Actual raytracing! */
 
 /**************/
@@ -206,10 +158,12 @@ int RayFindObstacle
 	return HitType;
 }
 
-const unsigned NumArealightVectors = 20;
-XYZ ArealightVectors[NumArealightVectors];
+unsigned NumArealightVectors = 20;
+XYZ *ArealightVectors;
 void InitArealightVectors()
 {
+	if (ArealightVectors != NULL) delete ArealightVectors;
+	ArealightVectors = new XYZ[NumArealightVectors];
 	// To smooth out shadows cast by lightsources,
 	// I plan to approximate the lightsources with
 	// a _cloud_ of lightsources around the point
@@ -366,41 +320,6 @@ void render(unsigned W, unsigned H, sf::Uint8 *pixels)
 			}
 		}
 	}
-
-	/*
-	// Tweak coordinates / camera parameters for the next frame
-	double much = 1.0;
-
-	// In the beginning, do some camera action (play with zoom)
-	if (zoom <= 1.1) zoom = 1.1;
-	else
-	{
-		if(zoom > 40) { if(zoomdelta > 0.95) zoomdelta -= 0.001; }
-		else if(zoom < 3) { if(zoomdelta < 0.99) zoomdelta += 0.001; }
-		zoom *= zoomdelta;
-		much = 1.1 / pow(zoom/1.1, 3);
-	}
-
-	// Update the rotation angle
-	camlook  += camlookdelta * much;
-	camangle += camangledelta * much;
-	*/
-
-	// Dynamically readjust the contrast based on the contents
-	// of the last frame
-	/*
-	double middle = (thisframe_min + thisframe_max) * 0.5;
-	double span   = (thisframe_max - thisframe_min);
-	thisframe_min = middle - span*0.60; // Avoid dark tones
-	thisframe_max = middle + span*0.37; // Emphasize bright tones
-	double new_contrast_offset = -thisframe_min;
-	double new_contrast		= 1 / (thisframe_max - thisframe_min);
-	// Avoid too abrupt changes, though
-	double l = 0.85;
-	//if(frameno == 0) l = 0.7;
-	contrast_offset = (contrast_offset*l + new_contrast_offset*(1.0-l));
-	contrast		= (contrast*l + new_contrast*(1.0-l));
-	*/
 }
 
 void doSketch(unsigned W, unsigned H, sf::Uint8 *pixels)
@@ -430,6 +349,7 @@ void doSketch(unsigned W, unsigned H, sf::Uint8 *pixels)
 			XYZ campix;
 			RayTrace(campix, campos, camray, 0);
 			campix *= 0.5;
+			/*
 		  #pragma omp critical
 		  {
 			// Update frame luminosity info for automatic contrast adjuster
@@ -439,6 +359,7 @@ void doSketch(unsigned W, unsigned H, sf::Uint8 *pixels)
 			if(lum > thisframe_max) thisframe_max = lum;
 			#pragma omp flush(thisframe_min,thisframe_max)
 		  }
+		  	*/
 			campix = campix * contrast;
 			campix.ClampWithDesaturation();
 
