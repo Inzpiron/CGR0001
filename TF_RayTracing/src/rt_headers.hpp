@@ -283,7 +283,7 @@ void RayTrace(XYZ& resultcolor, const XYZ& eye, const XYZ& dir, int k)
 					case 0: Pigment.Set(0.9, 0.7, 0.6); break;
 					case 1: Pigment.Set(0.6, 0.7, 0.7); break;
 					case 2: Pigment.Set(0.5, 0.8, 0.3); break;
-					case 3: Pigment.Set(0.1, 0.1, 0.1); break;
+					case 3: Pigment.Set(0.1, 0.1, 0.1); SpecularLight *= 0.4; break;
 				}
 				break;
 			case 1: // sphere
