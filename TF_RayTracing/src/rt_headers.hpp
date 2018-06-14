@@ -5,9 +5,11 @@
 #include <math.h>
 #include <stdlib.h>
 #include <time.h>
+#include <sstream>
 #include <SFML/System.hpp>
 #include <SFML/Graphics.hpp>
 #include <SFML/Window.hpp>
+#include "utilities.hpp"
 
 // Raytracing is mathematics-heavy. Declare mathematical datatypes
 inline double dmin(double a,double b) { return a<b ? a : b; }
@@ -226,7 +228,7 @@ void RayTrace(XYZ& resultcolor, const XYZ& eye, const XYZ& dir, int k)
 	double HitDist = 1e6;
 	XYZ HitLoc, HitNormal;
 	int HitIndex, HitType;
-	HitType = RayFindObstacle(eye,dir, HitDist,HitIndex, HitLoc,HitNormal);
+	HitType = RayFindObstacle(eye, dir, HitDist, HitIndex, HitLoc, HitNormal);
 	if(HitType != -1)
 	{
 		// Found an obstacle. Next, find out how it is illuminated.
@@ -235,6 +237,8 @@ void RayTrace(XYZ& resultcolor, const XYZ& eye, const XYZ& dir, int k)
 		// To smooth out the infinitely sharp shadows caused by
 		// infinitely small point-lightsources, assume the lightsource
 		// is actually a cloud of small lightsources around its center.
+
+		// DIFUSA
 		XYZ DiffuseLight = {{0,0,0}}, SpecularLight = {{0,0,0}};
 		XYZ Pigment = {{1, 0.98, 0.94}}; // default pigment
 		for(unsigned i=0; i<NumLights; ++i)
@@ -255,12 +259,16 @@ void RayTrace(XYZ& resultcolor, const XYZ& eye, const XYZ& dir, int k)
 						DiffuseLight += Lights[i].colour * DiffuseEffect;
 				}
 			}
+		// END DIFUSA
+
+		// SPECULAR
 		if(k > 1)
 		{
 			// Add specular light/reflection, unless recursion depth is at max
 			XYZ V(-dir); V.MirrorAround(HitNormal);
 			RayTrace(SpecularLight, HitLoc + V*1e-4, V, k-1);
 		}
+		// END SPECULAR
 
 		// AQUI COMEÇA CÁLCULO DE LUMINOSIDADE BASEADO EM MATERIAIS
 
@@ -342,7 +350,8 @@ void render(unsigned W, unsigned H, sf::Uint8 *pixels)
 			#pragma omp flush(thisframe_min,thisframe_max)
 		  }
 			// Exaggerate the colors to bring contrast better forth
-			campix = (campix + contrast_offset) * contrast;
+			//campix = (campix + contrast_offset) * contrast;
+			campix = campix * contrast;
 			// Clamp, and compensate for display gamma (for dithering)
 			campix.ClampWithDesaturation();
 			//XYZ campixG = campix.Pow(Gamma);
@@ -358,6 +367,7 @@ void render(unsigned W, unsigned H, sf::Uint8 *pixels)
 		}
 	}
 
+	/*
 	// Tweak coordinates / camera parameters for the next frame
 	double much = 1.0;
 
@@ -374,9 +384,11 @@ void render(unsigned W, unsigned H, sf::Uint8 *pixels)
 	// Update the rotation angle
 	camlook  += camlookdelta * much;
 	camangle += camangledelta * much;
+	*/
 
 	// Dynamically readjust the contrast based on the contents
 	// of the last frame
+	/*
 	double middle = (thisframe_min + thisframe_max) * 0.5;
 	double span   = (thisframe_max - thisframe_min);
 	thisframe_min = middle - span*0.60; // Avoid dark tones
@@ -388,6 +400,57 @@ void render(unsigned W, unsigned H, sf::Uint8 *pixels)
 	//if(frameno == 0) l = 0.7;
 	contrast_offset = (contrast_offset*l + new_contrast_offset*(1.0-l));
 	contrast		= (contrast*l + new_contrast*(1.0-l));
+	*/
+}
+
+void doSketch(unsigned W, unsigned H, sf::Uint8 *pixels)
+{
+	double AR = W/double(H);
+
+	// Rotate it around the center
+	camrotatematrix.InitRotate(camangle);
+	camrotatematrix.Transform(campos);
+	camlookmatrix.InitRotate(camlook);
+
+	// Determine the contrast ratio for this frame's pixels
+	thisframe_min = 100;
+	thisframe_max = -100;
+
+  #pragma omp parallel for collapse(2)
+	for(unsigned y=0; y<H; ++y)
+	{
+		for(unsigned x=0; x<W; ++x)
+		{
+			XYZ camray = {{ x / double(W) - 0.5,
+							y / double(H) - 0.5,
+							zoom }};
+			camray.d[0] *= AR; // Aspect ratio correction
+			camray.Normalize();
+			camlookmatrix.Transform(camray);
+			XYZ campix;
+			RayTrace(campix, campos, camray, 0);
+			campix *= 0.5;
+		  #pragma omp critical
+		  {
+			// Update frame luminosity info for automatic contrast adjuster
+			double lum = campix.Luma();
+			#pragma omp flush(thisframe_min,thisframe_max)
+			if(lum < thisframe_min) thisframe_min = lum;
+			if(lum > thisframe_max) thisframe_max = lum;
+			#pragma omp flush(thisframe_min,thisframe_max)
+		  }
+			campix = campix * contrast;
+			campix.ClampWithDesaturation();
+
+			// Draw pixel
+			{
+				pixels[((y*W) + x)*4 + 0] = unsigned(campix.d[0]*255); // Red
+				pixels[((y*W) + x)*4 + 1] = unsigned(campix.d[1]*255); // Green
+				pixels[((y*W) + x)*4 + 2] = unsigned(campix.d[2]*255); // Blue
+				pixels[((y*W) + x)*4 + 3] = 255; // Alpha
+			}
+		}
+	}
 }
 
 #endif
