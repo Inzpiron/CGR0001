@@ -45,7 +45,7 @@ void doRender()
 
 void consoleReader(sf::RenderWindow *window)
 {
-	float f_x, f_y, f_z, f_a, f_b;
+	float f_x, f_y, f_z, f_a, f_b, f_c;
 	int i_a, i_b;
 
 	std::string line, op;
@@ -64,14 +64,23 @@ void consoleReader(sf::RenderWindow *window)
 		if (op == "help")
 		{
 			printf("Commands: \n"
-				   "    help\n"
-				   "    set \n"
-				   "        campos x y z    - Set camera position\n"
-				   "        camangle x y z  - Set camera aiming direction\n"
-				   "        contrast f      - Set rendering contrast\n"
-				   "        depth d         - Set max. ray recursion depth\n"
-				   //"        res x y         - Set rendering resolution (not screen)\n"
-				   //"    resize x y          - Set screen size (not rendering resolution)\n"
+				   "    help  - Show this\n"
+				   "    set   - Define certain variables\n"
+				   "        campos x y z      - Set camera position\n"
+				   "        camangle x y z    - Set camera angle on each axis (radians)\n"
+				   "        contrast f        - Set rendering contrast\n"
+				   "        depth d           - Set max. ray recursion depth\n"
+				   "        res x y           - Set rendering resolution (not screen)\n"
+				   "        shadowres a       - Set shadow resolution (sample number\n"
+				   "                           for each number)\n"
+				   "    add                   - Insert objects to the scene\n"
+				   "        sphere x y z r    - Insert a circle\n"
+				   "        light x y z r g b - Insert a light source object\n"
+				   "        plane x y z d     - Insert a plane at d units from origin\n"
+				   "    list objType          - List object list for given type\n"
+				   "        objType = spheres|lights|planes\n"
+				   "    rem objType index     - Remove certain object from the scene\n"
+				   //"    resize x y            - Set screen size (not rendering resolution)\n"
 				  );
 		} else
 		if (op == "set")
@@ -81,7 +90,7 @@ void consoleReader(sf::RenderWindow *window)
 			{
 				command >> f_x >> f_y >> f_z;
 				campos.Set(f_x, f_y, f_z);
-				printf("Setting camera position to (%f, %f, %f)\n", f_x, f_y, f_z);
+				//printf("Setting camera position to (%f, %f, %f)\n", f_x, f_y, f_z);
 			} else
 			if (op == "camangle")
 			{
@@ -97,6 +106,7 @@ void consoleReader(sf::RenderWindow *window)
 			if (op == "depth")
 			{
 				command >> i_a;
+				if (i_a < 1) i_a = 1;
 				MAXTRACE = unsigned(i_a);
 			} else
 			if (op == "res")
@@ -118,8 +128,52 @@ void consoleReader(sf::RenderWindow *window)
 			if (op == "shadowres")
 			{
 				command >> i_a;
+				if (i_a < 1) i_a = 1;
 				NumArealightVectors = i_a;
 				InitArealightVectors();
+			}
+		} else
+		if (op == "add")
+		{
+			command >> op >> f_x >> f_y >> f_z;
+			if (op == "sphere")
+			{
+				command >> f_a; // Read radius
+				Spheres.push_back({{{f_x, f_y, f_z}}, f_a});
+			} else
+			if (op == "light")
+			{
+				command >> f_a >> f_b >> f_c; // Read color
+				Spheres.push_back({{{f_x, f_y, f_z}}, {{f_a, f_b, f_c}}});
+			} else
+			if (op == "plane")
+			{
+				command >> f_a; // Read distance
+				XYZ dir(f_x, f_y, f_z); dir.Normalize();
+				Spheres.push_back({dir, f_a});
+			}
+		} else
+		/*
+		TODO "    list objType          - List object list for given type\n"
+		TODO "        objType = spheres|lights|planes\n"
+		*/
+		if (op == "rem")
+		{
+			command >> op >> i_a;
+			if (op == "sphere")
+			{
+				if (i_a >= 0 && i_a < Spheres.size())
+					Spheres.remove(Spheres.begin() + i_a);
+			} else
+			if (op == "light")
+			{
+				if (i_a >= 0 && i_a < Lights.size())
+					Lights.remove(Lights.begin() + i_a);
+			} else
+			if (op == "plane")
+			{
+				if (i_a >= 0 && i_a < .size())
+					Lights.remove(Lights.begin() + i_a);
 			}
 		} else
 		/*
