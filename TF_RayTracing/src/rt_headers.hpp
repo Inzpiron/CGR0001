@@ -21,11 +21,10 @@ unsigned MAXTRACE = 2; // Maximum trace level
 // in direct eyesight on the given
 // line, and determine exactly which
 // point of the object is seen.
-int RayFindObstacle
-	(const XYZ& eye, const XYZ& dir,
-	 double& HitDist, int& HitIndex,
+int RayFindObstacle	(const XYZ& eye, const XYZ& dir, double& HitDist, int& HitIndex,
 	 XYZ& HitLoc, XYZ& HitNormal)
 {
+	double ERR_LOW = 1e-6;
 	unsigned NumSpheres = Spheres.size();
 	unsigned NumPlanes  = Planes.size();
 	
@@ -43,12 +42,12 @@ int RayFindObstacle
 			   - D2*(V.Squared() - r*r);
 		// Does the ray coincide
 		// with the sphere?
-		if(SQ < 1e-6) continue;
+		if(SQ < ERR_LOW) continue;
 		// Determine where exactly
 		double SQt = sqrt(SQ),
 			Dist = dmin(-DV-SQt,
 						-DV+SQt) / D2;
-		if(Dist<1e-6 || Dist >= HitDist)
+		if(Dist<ERR_LOW || Dist >= HitDist)
 			continue;
 		HitType = 1; HitIndex = i;
 		HitDist = Dist;
@@ -60,11 +59,11 @@ int RayFindObstacle
 	for(unsigned i=0; i<NumPlanes; ++i)
 	{
 		double DV = -Planes[i].normal.Dot(dir);
-		if(DV > -1e-6) continue;
+		if(DV > -ERR_LOW) continue;
 		double D2 =
 			Planes[i].normal.Dot(eye),
 			Dist = (D2+Planes[i].offset) / DV;
-		if(Dist<1e-6 || Dist>=HitDist)
+		if(Dist<ERR_LOW || Dist>=HitDist)
 			continue;
 		HitType = 0; HitIndex = i;
 		HitDist = Dist;
@@ -113,7 +112,8 @@ void RayTrace(XYZ& resultcolor, const XYZ& eye, const XYZ& dir, int k)
 		// DIFUSA
 		XYZ DiffuseLight = {{0,0,0}}, SpecularLight = {{0,0,0}};
 		XYZ Pigment = {{1, 0.98, 0.94}}; // default pigment
-		for(unsigned i=0; i<NumLights; ++i)
+		for(unsigned i=0; i<NumLights; i++)
+		{
 			for(unsigned j=0; j<NumArealightVectors; ++j)
 			{
 				XYZ V((Lights[i].where + ArealightVectors[j]) - HitLoc);
@@ -131,6 +131,7 @@ void RayTrace(XYZ& resultcolor, const XYZ& eye, const XYZ& dir, int k)
 						DiffuseLight += Lights[i].colour * DiffuseEffect;
 				}
 			}
+		}
 		// END DIFUSA
 
 		// SPECULAR
@@ -143,7 +144,6 @@ void RayTrace(XYZ& resultcolor, const XYZ& eye, const XYZ& dir, int k)
 		// END SPECULAR
 
 		// AQUI COMEÇA CÁLCULO DE LUMINOSIDADE BASEADO EM MATERIAIS
-
 		switch(HitType)
 		{
 			case 0: // plane
@@ -163,7 +163,6 @@ void RayTrace(XYZ& resultcolor, const XYZ& eye, const XYZ& dir, int k)
 				SpecularLight  *= 0.74;
 		}
 		resultcolor = (DiffuseLight + SpecularLight) * Pigment;
-
 		// AQUI TERMINA CÁLCULO DE LUMINOSIDADE BASEADO EM MATERIAIS
 	}
 }

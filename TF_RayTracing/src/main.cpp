@@ -98,6 +98,11 @@ void consoleReader(sf::RenderWindow *window)
 				camlook.Set(f_x, f_y, f_z);
 				//printf("Setting camera position to (%f, %f, %f)\n", f_x, f_y, f_z);
 			} else
+			if (op == "zoom")
+			{
+				command >> f_a;
+				zoom = f_a;
+			} else
 			if (op == "contrast")
 			{
 				command >> f_a;
@@ -139,18 +144,18 @@ void consoleReader(sf::RenderWindow *window)
 			if (op == "sphere")
 			{
 				command >> f_a; // Read radius
-				Spheres.push_back({{{f_x, f_y, f_z}}, f_a});
+				Spheres.push_back({{f_x, f_y, f_z}, f_a});
 			} else
 			if (op == "light")
 			{
 				command >> f_a >> f_b >> f_c; // Read color
-				Spheres.push_back({{{f_x, f_y, f_z}}, {{f_a, f_b, f_c}}});
+				Lights.push_back({{f_x, f_y, f_z}, {f_a, f_b, f_c}});
 			} else
 			if (op == "plane")
 			{
 				command >> f_a; // Read distance
-				XYZ dir(f_x, f_y, f_z); dir.Normalize();
-				Spheres.push_back({dir, f_a});
+				XYZ dir{{f_x, f_y, f_z}}; dir.Normalize();
+				Planes.push_back({dir, f_a});
 			}
 		} else
 		/*
@@ -163,17 +168,17 @@ void consoleReader(sf::RenderWindow *window)
 			if (op == "sphere")
 			{
 				if (i_a >= 0 && i_a < Spheres.size())
-					Spheres.remove(Spheres.begin() + i_a);
+					Spheres.erase(Spheres.begin() + i_a);
 			} else
 			if (op == "light")
 			{
 				if (i_a >= 0 && i_a < Lights.size())
-					Lights.remove(Lights.begin() + i_a);
+					Lights.erase(Lights.begin() + i_a);
 			} else
 			if (op == "plane")
 			{
-				if (i_a >= 0 && i_a < .size())
-					Lights.remove(Lights.begin() + i_a);
+				if (i_a >= 0 && i_a < Planes.size())
+					Planes.erase(Planes.begin() + i_a);
 			}
 		} else
 		/*
@@ -241,7 +246,7 @@ int main(int argc, char **argv)
 	InitDefaultScene();
 
 	//double zoom = 46.0, zoomdelta = 0.99;
-	zoom = 2.2; //zoomdelta = 0.99;
+	zoom = 1.0; //zoomdelta = 0.99;
 	contrast = 3.2; //contrast_offset = -0.12;
 	// Redefine camera parameters
 	campos.Set(0.0, 0.0, -180.0);
