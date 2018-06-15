@@ -3,7 +3,6 @@
 #include <iostream>
 #include <thread>
 #include <mutex>
-//#include <semaphore>
 
 unsigned W = 640, H = 480;
 unsigned rW = W, rH = H;
@@ -17,7 +16,6 @@ sf::Uint8 *pixels; // 0 - 255 para cada canal (RGBA)
 sf::Sprite sprite;
 std::mutex mut;
 std::mutex rmut;
-//std::semaphore sem;
 
 void doRender()
 {
@@ -90,13 +88,11 @@ void consoleReader(sf::RenderWindow *window)
 			{
 				command >> f_x >> f_y >> f_z;
 				campos.Set(f_x, f_y, f_z);
-				//printf("Setting camera position to (%f, %f, %f)\n", f_x, f_y, f_z);
 			} else
 			if (op == "camangle")
 			{
 				command >> f_x >> f_y >> f_z;
 				camlook.Set(f_x, f_y, f_z);
-				//printf("Setting camera position to (%f, %f, %f)\n", f_x, f_y, f_z);
 			} else
 			if (op == "zoom")
 			{
@@ -117,6 +113,7 @@ void consoleReader(sf::RenderWindow *window)
 			if (op == "res")
 			{
 				command >> i_a >> i_b;
+
 				rW = unsigned(i_a); rH = unsigned(i_b);
 				delete pixels;
 				pixels = new sf::Uint8[rW * rH * 4];
@@ -292,6 +289,7 @@ int main(int argc, char **argv)
 		}
 		else
 		{
+
 			window.clear();
 			//window.display();
 			// Atualizar textura

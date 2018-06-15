@@ -5,7 +5,7 @@
 
 void InitDefaultScene()
 {
-	Planes.push_back({{{ 0, 0,-1}}, -90});
+	//Planes.push_back({{{ 0, 0,-1}}, -90});
 	Planes.push_back({{{ 0, 1, 0}}, -30});
 	Planes.push_back({{{ 0,-1, 0}}, -30});
 	Planes.push_back({{{ 1, 0, 0}}, -30});
