@@ -147,9 +147,8 @@ void RayTrace(XYZ& resultcolor, const XYZ& eye, const XYZ& dir, int k)
 		switch(HitType)
 		{
 			case 0: // plane
-
-				//DiffuseLight *= 0.9;
-				//SpecularLight *= 0.5;
+				DiffuseLight *= 0.9;
+				SpecularLight *= 0.5;
 				// Color the different walls differently
 				switch(HitIndex % 4)
 				{
@@ -160,9 +159,10 @@ void RayTrace(XYZ& resultcolor, const XYZ& eye, const XYZ& dir, int k)
 				}
 				break;
 			case 1: // sphere
-				DiffuseLight   *= 0.34;
-				SpecularLight  *= 0.66;
-				Pigment.Set(0.7, 0.73, 0.7);
+				double shiny    = 0.94;
+				DiffuseLight   *= 1.0 - shiny;
+				SpecularLight  *=       shiny;
+				Pigment.Set(0.7, 0.72, 0.70);
 				break;
 		}
 		resultcolor = (DiffuseLight + SpecularLight) * Pigment;
