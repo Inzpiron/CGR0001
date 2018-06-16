@@ -145,7 +145,7 @@ void consoleReader(sf::RenderWindow *window)
 			if (op == "sphere")
 			{
 				command >> f_a; // Read radius
-				Spheres.push_back({{f_x, f_y, f_z}, &Materials[0], f_a});
+				Spheres.push_back({{f_x, f_y, f_z}, f_a});
 			} else
 			if (op == "light")
 			{
@@ -156,7 +156,7 @@ void consoleReader(sf::RenderWindow *window)
 			{
 				command >> f_a; // Read distance
 				XYZ dir{{f_x, f_y, f_z}}; dir.Normalize();
-				Planes.push_back({dir, &Materials[0], f_a});
+				Planes.push_back({dir, f_a});
 			}
 		} else
 		if (op == "list")

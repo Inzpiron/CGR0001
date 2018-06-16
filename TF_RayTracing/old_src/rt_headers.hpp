@@ -158,19 +158,11 @@ void RayTrace(XYZ& resultcolor, const XYZ& eye, const XYZ& dir, int k)
 					case 2: Pigment.Set(0.5, 0.8, 0.3); break;
 					case 3: Pigment.Set(0.1, 0.1, 0.1); SpecularLight *= 0.4; break;
 				}
-				
-				//Pigment        = Planes[HitIndex].mtl->color;
-				DiffuseLight  *= 1.0 - Planes[HitIndex].mtl->shininess;
-				SpecularLight *= Planes[HitIndex].mtl->shininess;
 				break;
 			case 1: // sphere
-				/*
-				DiffuseLight   *= 0.26;
-				SpecularLight  *= 0.74;
-				*/
-				//Pigment        = Spheres[HitIndex].mtl->color;
-				DiffuseLight  *= 1.0 - Spheres[HitIndex].mtl->shininess;
-				SpecularLight *= Spheres[HitIndex].mtl->shininess;
+				DiffuseLight   *= 0.34;
+				SpecularLight  *= 0.66;
+				Pigment.Set(0.7, 0.73, 0.7);
 				break;
 		}
 		resultcolor = (DiffuseLight + SpecularLight) * Pigment;
