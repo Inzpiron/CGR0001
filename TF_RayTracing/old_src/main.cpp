@@ -10,12 +10,14 @@ char outfile[256];
 bool toFile = false;
 bool rerender = false;
 bool die = false;
+bool resize = false;
 sf::Image image;
 sf::Texture texture;
 sf::Uint8 *pixels; // 0 - 255 para cada canal (RGBA)
 sf::Sprite sprite;
 std::mutex mut;
 std::mutex rmut;
+std::mutex dmut;
 
 void doRender()
 {
@@ -114,6 +116,7 @@ void consoleReader(sf::RenderWindow *window)
 			{
 				command >> i_a >> i_b;
 
+				dmut.lock();
 				rW = unsigned(i_a); rH = unsigned(i_b);
 				delete pixels;
 				pixels = new sf::Uint8[rW * rH * 4];
@@ -126,6 +129,7 @@ void consoleReader(sf::RenderWindow *window)
 				float sX = W/float(rW), sY = H/float(rH);
 				printf("Nova escala: x=%f, y=%f\n", sX, sY);
 				sprite.setScale(sX, sY);
+				dmut.unlock();
 			} else
 			if (op == "shadowres")
 			{
@@ -141,7 +145,7 @@ void consoleReader(sf::RenderWindow *window)
 			if (op == "sphere")
 			{
 				command >> f_a; // Read radius
-				Spheres.push_back({{f_x, f_y, f_z}, f_a});
+				Spheres.push_back({{f_x, f_y, f_z}, &Materials[0], f_a});
 			} else
 			if (op == "light")
 			{
@@ -152,13 +156,46 @@ void consoleReader(sf::RenderWindow *window)
 			{
 				command >> f_a; // Read distance
 				XYZ dir{{f_x, f_y, f_z}}; dir.Normalize();
-				Planes.push_back({dir, f_a});
+				Planes.push_back({dir, &Materials[0], f_a});
 			}
 		} else
-		/*
-		TODO "    list objType          - List object list for given type\n"
-		TODO "        objType = spheres|lights|planes\n"
-		*/
+		if (op == "list")
+		{
+			command >> op;
+			if (op == "sphere")
+			{
+				printf("Spheres:\n id |   x   |   y   |   z   | radius\n");
+				for (int i = 0; i < Spheres.size(); i++)
+				{
+					XYZ pos = Spheres[i].center;
+					double rad = Spheres[i].radius;
+					printf("%3d |%7.2f|%7.2f|%7.2f|%7.2f\n",
+					       i, pos[0], pos[1], pos[2], rad);
+				}
+			}
+			if (op == "light")
+			{
+				printf("Lights:\n id |   x   |   y   |   z   |  r  |  g  |  b\n");
+				for (int i = 0; i < Lights.size(); i++)
+				{
+					XYZ pos = Lights[i].center;
+					XYZ rgb = Lights[i].colour;
+					printf("%3d |%7.2f|%7.2f|%7.2f|%5.2f|%5.2f|%5.2f\n",
+						   i, pos[0], pos[1], pos[2], rgb[0], rgb[1], rgb[2]);
+				}
+			}
+			if (op == "plane")
+			{
+				printf("Planes:\n id |   x   |   y   |   z   | distance\n");
+				for (int i = 0; i < Planes.size(); i++)
+				{
+					XYZ pos = Planes[i].normal;
+					double offset = Planes[i].offset;
+					printf("%3d |%7.2f|%7.2f|%7.2f|%7.2f\n",
+					       i, pos[0], pos[1], pos[2], offset);
+				}
+			}
+		} else
 		if (op == "rem")
 		{
 			command >> op >> i_a;
@@ -178,18 +215,16 @@ void consoleReader(sf::RenderWindow *window)
 					Planes.erase(Planes.begin() + i_a);
 			}
 		} else
-		/*
 		if (op == "resize")
 		{
 			command >> i_a >> i_b;
 			W = unsigned(i_a); H = unsigned(i_b);
-			window.setSize(sf::Vector2u(W, H));
 			float sX = W/float(rW), sY = H/float(rH);
-			//printf("Nova escala: x=%f, y=%f\n", sX, sY);
-			//sprite.setTexture(texture, true);
-			//sprite.setScale(sX, sY);
+			printf("Nova escala: x=%f, y=%f\n", sX, sY);
+			resize = true;
+			sprite.setScale(sX, sY);
+			sprite.setTexture(texture, true);
 		} else
-		*/
 		if (op == "render")
 		{
 			rerender = true;
@@ -221,20 +256,15 @@ int main(int argc, char **argv)
 	rW = W; rH = H;
 
 	sf::RenderWindow window(sf::VideoMode(W, H), "MultiThreaded SFML RayTracing", sf::Style::Titlebar);
+	window.setVerticalSyncEnabled(true);
 	window.clear();
 	window.display();
 
-	//sf::Image image;
 	image.create(W, H, sf::Color::Black);
-	//sf::Texture texture;
 	if (!texture.create(W, H))
 		printf("Erro ao criar textura\n");
 
-	//sf::Sprite sprite;
-
-	//sf::Uint8 *pixels = new sf::Uint8[rW * rH * 4];
 	pixels = new sf::Uint8[rW * rH * 4];
-	//for (unsigned i=0; i < rW*rH*4; i++) pixels[i] = 0;
 
 	texture.update(pixels);
 	sprite.setTexture(texture);
@@ -242,11 +272,9 @@ int main(int argc, char **argv)
 	InitArealightVectors();
 	InitDefaultScene();
 
-	//double zoom = 46.0, zoomdelta = 0.99;
 	zoom = 1.0; //zoomdelta = 0.99;
 	contrast = 3.2; //contrast_offset = -0.12;
-	// Redefine camera parameters
-	campos.Set(0.0, 0.0, -180.0);
+	campos.Set(0.0, 0.0, -60.0);
 	camangle.Set(0,0,0);
 	camangledelta.Set(-.005, -.011, -.017);
 	camlook.Set(0,0,0);
@@ -262,10 +290,6 @@ int main(int argc, char **argv)
 	int frametime;
 	sf::Clock clock;
 	sf::Event event;
-	window.setActive(false);
-	//std::thread windowThread(updateScreen, &window, &texture, &sprite, pixels);
-	//sf::Thread windowThread(&updateScreen, &window);
-	//windowThread.launch();
 	std::thread renderThread(doRender);
 
 	std::thread consoleThread(consoleReader, &window);
@@ -280,7 +304,7 @@ int main(int argc, char **argv)
 				break;
 			}
 		}
-		
+	
 		if (toFile)
 		{
 			image.create(rW, rH, pixels);
@@ -289,15 +313,17 @@ int main(int argc, char **argv)
 		}
 		else
 		{
-
+			dmut.lock();
 			window.clear();
 			//window.display();
+			if (resize) window.setSize(sf::Vector2u(W, H));
 			// Atualizar textura
 			texture.update(pixels);
 			sprite.setTexture(texture, true);
 			// Apresentar resultado
 			window.draw(sprite);
 			window.display();
+			dmut.unlock();
 		}
 
 		if (die)

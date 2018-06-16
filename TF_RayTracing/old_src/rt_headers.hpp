@@ -63,7 +63,7 @@ int RayFindObstacle	(const XYZ& eye, const XYZ& dir, double& HitDist, int& HitIn
 		double D2 =
 			Planes[i].normal.Dot(eye),
 			Dist = (D2+Planes[i].offset) / DV;
-		if(Dist<ERR_LOW || Dist>=HitDist)
+		if(Dist<ERR_LOW || Dist>HitDist)
 			continue;
 		HitType = 0; HitIndex = i;
 		HitDist = Dist;
@@ -116,7 +116,7 @@ void RayTrace(XYZ& resultcolor, const XYZ& eye, const XYZ& dir, int k)
 		{
 			for(unsigned j=0; j<NumArealightVectors; ++j)
 			{
-				XYZ V((Lights[i].where + ArealightVectors[j]) - HitLoc);
+				XYZ V((Lights[i].center + ArealightVectors[j]) - HitLoc);
 				double LightDist = V.Len();
 				V.Normalize();
 				double DiffuseEffect = HitNormal.Dot(V) / (double)NumArealightVectors;
@@ -147,8 +147,9 @@ void RayTrace(XYZ& resultcolor, const XYZ& eye, const XYZ& dir, int k)
 		switch(HitType)
 		{
 			case 0: // plane
-				DiffuseLight *= 0.9;
-				SpecularLight *= 0.5;
+
+				//DiffuseLight *= 0.9;
+				//SpecularLight *= 0.5;
 				// Color the different walls differently
 				switch(HitIndex % 4)
 				{
@@ -157,10 +158,20 @@ void RayTrace(XYZ& resultcolor, const XYZ& eye, const XYZ& dir, int k)
 					case 2: Pigment.Set(0.5, 0.8, 0.3); break;
 					case 3: Pigment.Set(0.1, 0.1, 0.1); SpecularLight *= 0.4; break;
 				}
+				
+				//Pigment        = Planes[HitIndex].mtl->color;
+				DiffuseLight  *= 1.0 - Planes[HitIndex].mtl->shininess;
+				SpecularLight *= Planes[HitIndex].mtl->shininess;
 				break;
 			case 1: // sphere
-				DiffuseLight  *= 1.0;
+				/*
+				DiffuseLight   *= 0.26;
 				SpecularLight  *= 0.74;
+				*/
+				//Pigment        = Spheres[HitIndex].mtl->color;
+				DiffuseLight  *= 1.0 - Spheres[HitIndex].mtl->shininess;
+				SpecularLight *= Spheres[HitIndex].mtl->shininess;
+				break;
 		}
 		resultcolor = (DiffuseLight + SpecularLight) * Pigment;
 		// AQUI TERMINA CÁLCULO DE LUMINOSIDADE BASEADO EM MATERIAIS

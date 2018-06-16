@@ -22,6 +22,7 @@ struct XYZ
 	do_op(-)
 	#undef do_op
 	XYZ operator- () const { XYZ tmp = { { -d[0], -d[1], -d[2] } }; return tmp; }
+	double operator[] (const int a) const { if(a > 2 || a < 0) return 0; return d[a]; }
 	XYZ Pow(double b) const
 		{ XYZ tmp = {{ pow(d[0],b), pow(d[1],b), pow(d[2],b) }}; return tmp; }
 	// Operators pertinent to geometrical vectors:
