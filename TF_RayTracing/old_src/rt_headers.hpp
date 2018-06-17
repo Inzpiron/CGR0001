@@ -105,8 +105,21 @@ void RayTrace(XYZ& resultcolor, const XYZ& eye, const XYZ& dir, int k)
 		// is actually a cloud of small lightsources around its center.
 
 		// DIFUSA
-		XYZ DiffuseLight = {{0,0,0}}, SpecularLight = {{0,0,0}};
-		XYZ Pigment = {{1, 0.98, 0.94}}; // default pigment
+		XYZ DiffuseLight {{0,0,0}}, SpecularLight {{0,0,0}}, Pigment;
+		double Roughness, Shininess;
+		switch (HitType)
+		{
+			case 0:
+				Roughness = Planes[HitIndex].mtl.roughness;
+				Pigment = Planes[HitIndex].mtl.color;
+				Shininess = Planes[HitIndex].mtl.shininess;
+				break;
+			case 1:
+				Roughness = Spheres[HitIndex].mtl.roughness;
+				Pigment = Spheres[HitIndex].mtl.color;
+				Shininess = Planes[HitIndex].mtl.shininess;
+				break;
+		}
 		for(unsigned i=0; i<NumLights; i++)
 		{
 			for(unsigned j=0; j<NumArealightVectors; ++j)
@@ -134,20 +147,6 @@ void RayTrace(XYZ& resultcolor, const XYZ& eye, const XYZ& dir, int k)
 		{
 			// Add specular light/reflection, unless recursion depth is at max
 			XYZ V(-dir); V.MirrorAround(HitNormal);
-			double roughness;
-			switch (HitType)
-			{
-				case 0:
-					roughness = Planes[HitIndex].mtl.roughness;
-					Pigment = Planes[HitIndex].mtl.color;
-					DiffuseLight *= Planes[HitIndex].mtl.shininess;
-					break;
-				case 1:
-					roughness = Spheres[HitIndex].mtl.roughness;
-					Pigment = Spheres[HitIndex].mtl.color;
-					DiffuseLight *= Spheres[HitIndex].mtl.shininess;
-					break;
-			}
 			int roughnessSamples = SURFACE_SAMPLES;
 			int kn = roughnessSamples;
 			XYZ resultColor {{0.0,0.0,0.0}}, auxColor, auxV, rndFactor;
@@ -158,14 +157,15 @@ void RayTrace(XYZ& resultcolor, const XYZ& eye, const XYZ& dir, int k)
 							  rand()%1000 / 1000.0,
 						      rand()%1000 / 1000.0);
 				rndFactor.Normalize();
-				rndFactor *= roughness;
+				rndFactor *= Roughness;
 				auxV += rndFactor;
 				auxV.Normalize();
 				RayTrace(auxColor, HitLoc + auxV*1e-4, auxV, k-1);
 				resultColor += auxColor;
 			}
 			resultColor *= 1.0/double(roughnessSamples);
-			SpecularLight = resultColor;
+			DiffuseLight  *= 1.0 - Shininess;
+			SpecularLight = resultColor * Shininess;
 			/*
 			RayTrace(SpecularLight, HitLoc + V*1e-4, V, k-1);
 			*/
