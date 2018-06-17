@@ -173,10 +173,6 @@ void RayTrace(XYZ& resultcolor, const XYZ& eye, const XYZ& dir, int k)
 	}
 }
 
-// Determine the contrast ratio for this frame's pixels
-double thisframe_min = 100;
-double thisframe_max = -100;
-
 Matrix camrotatematrix, camlookmatrix;
 
 void progress()
