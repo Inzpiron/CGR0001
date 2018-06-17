@@ -40,7 +40,7 @@ int RayFindObstacle	(const XYZ& eye, const XYZ& dir, double& HitDist, int& HitIn
 		if(SQ < ERR_LOW) continue;
 		// Determine where exactly
 		double SQt = sqrt(SQ),
-			Dist = dmin(-DV-SQt,
+			Dist = MIN(-DV-SQt,
 						-DV+SQt) / D2;
 		if(Dist<ERR_LOW || Dist >= HitDist)
 			continue;

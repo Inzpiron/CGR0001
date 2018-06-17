@@ -6,7 +6,6 @@
 // Declarations for scene description
 // Walls are planes. Planes have a
 // normal vector and a distance.
-inline double dmin(double a,double b) { return a<b ? a : b; }
 struct XYZ
 {
 	double d[3];
@@ -66,8 +65,8 @@ struct XYZ
 		// we don't need to determine the original saturation
 		// level of the pixel.
 		for(int n=0; n<3; ++n)
-			if(d[n] > 1.0) sat = dmin(sat, (l-1.0) / (l-d[n]));
-			else if(d[n] < 0.0) sat = dmin(sat, l  / (l-d[n]));
+			if(d[n] > 1.0) sat = MIN(sat, (l-1.0) / (l-d[n]));
+			else if(d[n] < 0.0) sat = MIN(sat, l  / (l-d[n]));
 		if(sat != 1.0)
 			 { *this = (*this - l) * sat + l; Clamp(); }
 	}
