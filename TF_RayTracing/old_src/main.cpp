@@ -6,21 +6,15 @@
 
 void doRender()
 {
-	sf::Clock clock;
-	int frametime;
 	while (!die)
 	{
 		mut.lock();
 		if (rerender)
 		{
-			clock.restart();
 			rmut.lock();
 			//if (sketch) doSketch(rW, rH, pixels);
 			//else render(rW, rH, pixels);
 			render(rW, rH, pixels);
-			frametime = clock.getElapsedTime().asMilliseconds();
-	
-			printf("Frametime %1.3fs\n", frametime/1000.0);
 			rerender = false;
 			rmut.unlock();
 		}
@@ -55,14 +49,6 @@ int main(int argc, char **argv)
 
 	InitArealightVectors();
 	InitDefaultScene();
-
-	zoom = 1.0; //zoomdelta = 0.99;
-	contrast = 3.2; //contrast_offset = -0.12;
-	campos.Set(0.0, 0.0, -60.0);
-	camangle.Set(0,0,0);
-	camangledelta.Set(-.005, -.011, -.017);
-	camlook.Set(0,0,0);
-	camlookdelta.Set(-.001, .005, .004);
 
 	std::stringstream command;
 	std::string line, op;

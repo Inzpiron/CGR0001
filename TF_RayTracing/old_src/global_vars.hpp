@@ -6,6 +6,7 @@
 
 unsigned W = 640, H = 480;
 unsigned rW = W, rH = H;
+unsigned linesCompleted;
 char outfile[256];
 bool toFile = false;
 bool rerender = false;
@@ -21,12 +22,14 @@ std::mutex dmut;
 
 unsigned MAXTRACE = 2; // Maximum trace level
 unsigned SURFACE_SAMPLES = 1; // For sampling roughness
+double LIGHT_FALLOFF = 34.0;
 
-XYZ camangle	  = {{0,0,0}};
-XYZ camangledelta = {{-.005, -.011, -.017}};
-XYZ camlook       = {{0,0,0}};
-XYZ camlookdelta  = {{-.001, .005, .004}};
-XYZ campos        = {{ 0.0, -3.0, 16.0}};
+XYZ AmbientLight  = {{  0.20, 0.20,  0.20}};
+XYZ camangle	  = {{  0.00, 0.00,  0.00}};
+XYZ camlook       = {{  0.08,-0.02,  0.00}};
+XYZ campos        = {{-12.00,13.00,-40.00}};
+double zoom       = 4.0;
+double contrast   = 3.2;
 
 std::vector<Plane> Planes;
 std::vector<Sphere> Spheres;

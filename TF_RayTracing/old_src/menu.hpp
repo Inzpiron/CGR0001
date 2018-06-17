@@ -3,7 +3,7 @@
 
 void consoleReader(sf::RenderWindow *window)
 {
-	float f_x, f_y, f_z, f_a, f_b, f_c;
+	double f_x, f_y, f_z, f_a, f_b, f_c;
 	int i_a, i_b;
 
 	std::string line, op;
@@ -32,17 +32,20 @@ void consoleReader(sf::RenderWindow *window)
 				   "        shadowres a       - Set shadow resolution (sample number\n"
 				   "                           for each number)\n"
 				   "        scatter a         - Set surface roughness sample count\n"
+				   "        lightfall f       - Set light falloff factor\n"
 				   "        sphere index      - Alter sphere's:\n"
 				   "            move x y z    - position (relational)\n"
 				   "            setpos x y z  - position (absolute)\n"
 				   "            color r g b   - radius\n"
 				   "            radius r      - radius\n"
-				   "            roughness h   - surface roughness\n"
+				   "            rough h       - surface roughness\n"
+				   "            shiny s       - surface shininess\n"
 				   "        plane index       - Alter plane's:\n"
 				   "            normal x y z  - normal\n"
 				   "            color r g b   - color\n"
 				   "            offset r      - offset from origin\n"
-				   "            roughness h   - surface roughness\n"
+				   "            rough h       - surface roughness\n"
+				   "            shiny s       - surface shininess\n"
 				   "    add                   - Insert objects to the scene\n"
 				   "        sphere x y z r h  - Insert a circle with r radius and h roughness\n"
 				   "        light x y z r g b - Insert a light source object\n"
@@ -85,9 +88,26 @@ void consoleReader(sf::RenderWindow *window)
 			if (op == "res")
 			{
 				command >> i_a >> i_b;
-
 				dmut.lock();
 				rW = unsigned(i_a); rH = unsigned(i_b);
+				delete pixels;
+				pixels = new sf::Uint8[rW * rH * 4];
+				if (!texture.create(rW, rH))
+				{
+					printf("Error on texture resizing!\n");
+					break;
+				}
+				sprite.setTexture(texture, true);
+				float sX = W/float(rW), sY = H/float(rH);
+				printf("Nova escala: x=%f, y=%f\n", sX, sY);
+				sprite.setScale(sX, sY);
+				dmut.unlock();
+			} else
+			if (op == "scale")
+			{
+				command >> f_a;
+				dmut.lock();
+				rW = unsigned(W*f_a); rH = unsigned(H*f_a);
 				delete pixels;
 				pixels = new sf::Uint8[rW * rH * 4];
 				if (!texture.create(rW, rH))
@@ -113,6 +133,77 @@ void consoleReader(sf::RenderWindow *window)
 				command >> i_a;
 				if (i_a < 1) i_a = 1;
 				SURFACE_SAMPLES = i_a;
+			} else
+			if (op == "lightfall")
+			{
+				command >> f_a;
+				LIGHT_FALLOFF = f_a;
+			} else
+			if (op == "sphere")
+			{
+				command >> i_a >> op;
+				if (i_a < 0 || i_a >= Spheres.size()) continue;
+				if (op == "move")
+				{
+					command >> f_x >> f_y >> f_z;
+					Spheres[i_a].center += XYZ{{f_x, f_y, f_z}};
+				} else
+				if (op == "pos")
+				{
+					command >> f_x >> f_y >> f_z;
+					Spheres[i_a].center.Set(f_x, f_y, f_z);
+				} else
+				if (op == "color")
+				{
+					command >> f_a >> f_b >> f_c;
+					Spheres[i_a].mtl.color.Set(f_a, f_b, f_c);
+				} else
+				if (op == "radius")
+				{
+					command >> f_a;
+					Spheres[i_a].radius = f_a;
+				} else
+				if (op == "rough")
+				{
+					command >> f_a;
+					Spheres[i_a].mtl.roughness = f_a;
+				} else
+				if (op == "shiny")
+				{
+					command >> f_a;
+					Spheres[i_a].mtl.shininess = f_a;
+				}
+			} else
+			if (op == "plane")
+			{
+				command >> i_a >> op;
+				if (i_a < 0 || i_a >= Planes.size()) continue;
+				if (op == "normal")
+				{
+					command >> f_x >> f_y >> f_z;
+					Planes[i_a].normal.Set(f_x, f_y, f_z);
+					Planes[i_a].normal.Normalize();
+				} else
+				if (op == "color")
+				{
+					command >> f_a >> f_b >> f_c;
+					Planes[i_a].mtl.color.Set(f_a, f_b, f_c);
+				} else
+				if (op == "offset")
+				{
+					command >> f_a;
+					Planes[i_a].offset = f_a;
+				} else
+				if (op == "rough")
+				{
+					command >> f_a;
+					Planes[i_a].mtl.roughness = f_a;
+				} else
+				if (op == "shiny")
+				{
+					command >> f_a;
+					Planes[i_a].mtl.shininess = f_a;
+				}
 			}
 		} else
 		if (op == "add")
@@ -140,14 +231,14 @@ void consoleReader(sf::RenderWindow *window)
 			command >> op;
 			if (op == "sphere")
 			{
-				printf("Spheres:\n id |   x   |   y   |   z   | radius |roughness\n");
+				printf("Spheres:\n id |   x  |   y  |   z  |radius|  r |  g |  b |rough|shiny\n");
 				for (int i = 0; i < Spheres.size(); i++)
 				{
 					XYZ pos = Spheres[i].center;
 					double rad = Spheres[i].radius;
 					Material *mtl = &Spheres[i].mtl;
-					printf("%3d |%7.2f|%7.2f|%7.2f|%7.2f|\n"
-						   "    |  r  |  g  |  b  |rough|shiny%7.2f\n",
+					printf("%3d |%6.2f|%6.2f|%6.2f|%6.2f|"
+						   "%4.f|%4.f|%4.f|%5.f|%5.f\n",
 					       i, pos[0], pos[1], pos[2], rad,
 						   mtl->color[0], mtl->color[1], mtl->color[2],
 						   mtl->roughness, mtl->shininess);
@@ -155,7 +246,7 @@ void consoleReader(sf::RenderWindow *window)
 			}
 			if (op == "light")
 			{
-				printf("Lights:\n id |   x   |   y   |   z   |  r  |  g  |  b\n");
+				printf("Lights:\n id |   x  |   y  |   z  |  r  |  g  |  b\n");
 				for (int i = 0; i < Lights.size(); i++)
 				{
 					XYZ pos = Lights[i].center;
@@ -166,13 +257,17 @@ void consoleReader(sf::RenderWindow *window)
 			}
 			if (op == "plane")
 			{
-				printf("Planes:\n id |   x   |   y   |   z   | distance\n");
+				printf("Planes:\n id |   x  |   y  |   z  |offset|  r |  g |  b |rough|shiny\n");
 				for (int i = 0; i < Planes.size(); i++)
 				{
 					XYZ pos = Planes[i].normal;
 					double offset = Planes[i].offset;
-					printf("%3d |%7.2f|%7.2f|%7.2f|%7.2f\n",
-					       i, pos[0], pos[1], pos[2], offset);
+					Material *mtl = &Planes[i].mtl;
+					printf("%3d |%7.2f|%7.2f|%7.2f|%7.2f|"
+						   "%4.f|%4.f|%4.f|%5.f|%5.f\n",
+					       i, pos[0], pos[1], pos[2], offset,
+						   mtl->color[0], mtl->color[1], mtl->color[2],
+						   mtl->roughness, mtl->shininess);
 				}
 			}
 		} else

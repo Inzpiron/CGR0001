@@ -117,7 +117,7 @@ void RayTrace(XYZ& resultcolor, const XYZ& eye, const XYZ& dir, int k)
 			case 1:
 				Roughness = Spheres[HitIndex].mtl.roughness;
 				Pigment = Spheres[HitIndex].mtl.color;
-				Shininess = Planes[HitIndex].mtl.shininess;
+				Shininess = Spheres[HitIndex].mtl.shininess;
 				break;
 		}
 		for(unsigned i=0; i<NumLights; i++)
@@ -128,7 +128,7 @@ void RayTrace(XYZ& resultcolor, const XYZ& eye, const XYZ& dir, int k)
 				double LightDist = V.Len();
 				V.Normalize();
 				double DiffuseEffect = HitNormal.Dot(V) / (double)NumArealightVectors;
-				double Attenuation = (1 + pow(LightDist / 34.0, 2.0));
+				double Attenuation = (1 + pow(LightDist / LIGHT_FALLOFF, 2.0));
 				DiffuseEffect /= Attenuation;
 				if(DiffuseEffect > 1e-3)
 				{
@@ -148,7 +148,8 @@ void RayTrace(XYZ& resultcolor, const XYZ& eye, const XYZ& dir, int k)
 			// Add specular light/reflection, unless recursion depth is at max
 			XYZ V(-dir); V.MirrorAround(HitNormal);
 			int roughnessSamples = SURFACE_SAMPLES;
-			int kn = roughnessSamples;
+			int decay = MAX(MAXTRACE - k, 0);
+			int kn = MAX(roughnessSamples - decay, 1);
 			XYZ resultColor {{0.0,0.0,0.0}}, auxColor, auxV, rndFactor;
 			while (kn--)
 			{
@@ -163,47 +164,15 @@ void RayTrace(XYZ& resultcolor, const XYZ& eye, const XYZ& dir, int k)
 				RayTrace(auxColor, HitLoc + auxV*1e-4, auxV, k-1);
 				resultColor += auxColor;
 			}
-			resultColor *= 1.0/double(roughnessSamples);
+			resultColor   *= 1.0/double(roughnessSamples);
 			DiffuseLight  *= 1.0 - Shininess;
-			SpecularLight = resultColor * Shininess;
-			/*
-			RayTrace(SpecularLight, HitLoc + V*1e-4, V, k-1);
-			*/
+			SpecularLight  = resultColor * Shininess;
 		}
 		// END SPECULAR
 
-		/*
-		// AQUI COMEÇA CÁLCULO DE LUMINOSIDADE BASEADO EM MATERIAIS
-		switch(HitType)
-		{
-			case 0: // plane
-				DiffuseLight *= 0.9;
-				SpecularLight *= 0.5;
-				// Color the different walls differently
-				switch(HitIndex % 4)
-				{
-					case 0: Pigment.Set(0.9, 0.7, 0.6); break;
-					case 1: Pigment.Set(0.6, 0.7, 0.7); break;
-					case 2: Pigment.Set(0.5, 0.8, 0.3); break;
-					case 3: Pigment.Set(0.1, 0.1, 0.1); SpecularLight *= 0.4; break;
-				}
-				break;
-			case 1: // sphere
-				double shiny    = 0.98;
-				DiffuseLight   *= 1.0 - shiny;
-				SpecularLight  *=       shiny;
-				Pigment.Set(0.92, 0.94, 0.93);
-				break;
-		}
-		// AQUI TERMINA CÁLCULO DE LUMINOSIDADE BASEADO EM MATERIAIS
-		*/
 		resultcolor = (DiffuseLight + SpecularLight) * Pigment;
 	}
 }
-
-//double zoom = 46.0, zoomdelta = 0.99;
-double zoom = 3.0, zoomdelta = 0.99;
-double contrast = 6.2, contrast_offset = -0.12;
 
 // Determine the contrast ratio for this frame's pixels
 double thisframe_min = 100;
@@ -211,19 +180,41 @@ double thisframe_max = -100;
 
 Matrix camrotatematrix, camlookmatrix;
 
-/* MAIN PROGRAM */
+void progress()
+{
+	float progress, estimate;
+	sf::Clock clock;
+	sf::Time start = clock.getElapsedTime(), elapsed;
+	while (linesCompleted < rH)
+	{
+		progress = (linesCompleted * 100) / float(rH);
+		elapsed  = clock.getElapsedTime();
+		estimate = (elapsed - start).asSeconds() * (100.0/progress);
+		estimate -= elapsed.asSeconds(); 
+
+		printf("\r                                                       "
+			   "\rCompleted: %5.1f%%; Remaining time: %d seconds",
+			   progress, unsigned(estimate));
+		fflush(stdout);
+		sleep(50);
+	}
+	estimate = clock.getElapsedTime().asSeconds();
+	printf("\r                                                "
+		   "\rFrame finished! Time: %.3f seconds\n", estimate);
+	fflush(stdout);
+}
+
+/* RayTracing */
 void render(unsigned W, unsigned H, sf::Uint8 *pixels)
 {
 	double AR = W/double(H);
+	linesCompleted = 0;
+	std::thread progressThread(progress);
 
 	// Rotate it around the center
 	camrotatematrix.InitRotate(camangle);
 	camrotatematrix.Transform(campos);
 	camlookmatrix.InitRotate(camlook);
-
-	// Determine the contrast ratio for this frame's pixels
-	thisframe_min = 100;
-	thisframe_max = -100;
 
   #pragma omp parallel for collapse(2)
 	for(unsigned y=0; y<H; ++y)
@@ -239,72 +230,6 @@ void render(unsigned W, unsigned H, sf::Uint8 *pixels)
 			XYZ campix;
 			RayTrace(campix, campos, camray, MAXTRACE);
 			campix *= 0.5;
-		  #pragma omp critical
-		  {
-			// Update frame luminosity info for automatic contrast adjuster
-			double lum = campix.Luma();
-			#pragma omp flush(thisframe_min,thisframe_max)
-			if(lum < thisframe_min) thisframe_min = lum;
-			if(lum > thisframe_max) thisframe_max = lum;
-			#pragma omp flush(thisframe_min,thisframe_max)
-		  }
-			// Exaggerate the colors to bring contrast better forth
-			//campix = (campix + contrast_offset) * contrast;
-			campix = campix * contrast;
-			// Clamp, and compensate for display gamma (for dithering)
-			campix.ClampWithDesaturation();
-			//XYZ campixG = campix.Pow(Gamma);
-			//XYZ qtryG = campixG;
-
-			// Draw pixel
-			{
-				pixels[((y*W) + x)*4 + 0] = unsigned(campix.d[0]*255); // Red
-				pixels[((y*W) + x)*4 + 1] = unsigned(campix.d[1]*255); // Green
-				pixels[((y*W) + x)*4 + 2] = unsigned(campix.d[2]*255); // Blue
-				pixels[((y*W) + x)*4 + 3] = 255; // Alpha
-			}
-		}
-	}
-}
-
-void doSketch(unsigned W, unsigned H, sf::Uint8 *pixels)
-{
-	double AR = W/double(H);
-
-	// Rotate it around the center
-	camrotatematrix.InitRotate(camangle);
-	camrotatematrix.Transform(campos);
-	camlookmatrix.InitRotate(camlook);
-
-	// Determine the contrast ratio for this frame's pixels
-	thisframe_min = 100;
-	thisframe_max = -100;
-
-  #pragma omp parallel for collapse(2)
-	for(unsigned y=0; y<H; ++y)
-	{
-		for(unsigned x=0; x<W; ++x)
-		{
-			XYZ camray = {{ x / double(W) - 0.5,
-							y / double(H) - 0.5,
-							zoom }};
-			camray.d[0] *= AR; // Aspect ratio correction
-			camray.Normalize();
-			camlookmatrix.Transform(camray);
-			XYZ campix;
-			RayTrace(campix, campos, camray, 0);
-			campix *= 0.5;
-			/*
-		  #pragma omp critical
-		  {
-			// Update frame luminosity info for automatic contrast adjuster
-			double lum = campix.Luma();
-			#pragma omp flush(thisframe_min,thisframe_max)
-			if(lum < thisframe_min) thisframe_min = lum;
-			if(lum > thisframe_max) thisframe_max = lum;
-			#pragma omp flush(thisframe_min,thisframe_max)
-		  }
-		  	*/
 			campix = campix * contrast;
 			campix.ClampWithDesaturation();
 
@@ -315,8 +240,16 @@ void doSketch(unsigned W, unsigned H, sf::Uint8 *pixels)
 				pixels[((y*W) + x)*4 + 2] = unsigned(campix.d[2]*255); // Blue
 				pixels[((y*W) + x)*4 + 3] = 255; // Alpha
 			}
+			#pragma omp critical
+			{
+				#pragma omp flush(linesCompleted)
+				if (x == W-1) linesCompleted++;
+				#pragma omp flush(linesCompleted)
+			}
 		}
 	}
+
+	progressThread.join();
 }
 
 #endif
