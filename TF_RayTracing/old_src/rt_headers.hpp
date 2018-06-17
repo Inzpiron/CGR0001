@@ -1,18 +1,13 @@
 #ifndef __RT_HEADERS__
 #define __RT_HEADERS__
 
-#include <stdio.h>
-#include <math.h>
-#include <stdlib.h>
-#include <time.h>
-#include <sstream>
-#include <SFML/System.hpp>
-#include <SFML/Graphics.hpp>
-#include <SFML/Window.hpp>
+#include "commons.hpp"
 #include "utilities.hpp"
 #include "objects.hpp"
-
-unsigned MAXTRACE = 2; // Maximum trace level
+#include <cstdio>
+#include <math.h>
+#include <cstdlib>
+#include <ctime>
 
 /* Actual raytracing! */
 
@@ -139,10 +134,45 @@ void RayTrace(XYZ& resultcolor, const XYZ& eye, const XYZ& dir, int k)
 		{
 			// Add specular light/reflection, unless recursion depth is at max
 			XYZ V(-dir); V.MirrorAround(HitNormal);
+			double roughness;
+			switch (HitType)
+			{
+				case 0:
+					roughness = Planes[HitIndex].mtl.roughness;
+					Pigment = Planes[HitIndex].mtl.color;
+					DiffuseLight *= Planes[HitIndex].mtl.shininess;
+					break;
+				case 1:
+					roughness = Spheres[HitIndex].mtl.roughness;
+					Pigment = Spheres[HitIndex].mtl.color;
+					DiffuseLight *= Spheres[HitIndex].mtl.shininess;
+					break;
+			}
+			int roughnessSamples = SURFACE_SAMPLES;
+			int kn = roughnessSamples;
+			XYZ resultColor {{0.0,0.0,0.0}}, auxColor, auxV, rndFactor;
+			while (kn--)
+			{
+				auxV = V;
+				rndFactor.Set(rand()%1000 / 1000.0,
+							  rand()%1000 / 1000.0,
+						      rand()%1000 / 1000.0);
+				rndFactor.Normalize();
+				rndFactor *= roughness;
+				auxV += rndFactor;
+				auxV.Normalize();
+				RayTrace(auxColor, HitLoc + auxV*1e-4, auxV, k-1);
+				resultColor += auxColor;
+			}
+			resultColor *= 1.0/double(roughnessSamples);
+			SpecularLight = resultColor;
+			/*
 			RayTrace(SpecularLight, HitLoc + V*1e-4, V, k-1);
+			*/
 		}
 		// END SPECULAR
 
+		/*
 		// AQUI COMEÇA CÁLCULO DE LUMINOSIDADE BASEADO EM MATERIAIS
 		switch(HitType)
 		{
@@ -159,22 +189,17 @@ void RayTrace(XYZ& resultcolor, const XYZ& eye, const XYZ& dir, int k)
 				}
 				break;
 			case 1: // sphere
-				double shiny    = 0.94;
+				double shiny    = 0.98;
 				DiffuseLight   *= 1.0 - shiny;
 				SpecularLight  *=       shiny;
-				Pigment.Set(0.7, 0.72, 0.70);
+				Pigment.Set(0.92, 0.94, 0.93);
 				break;
 		}
-		resultcolor = (DiffuseLight + SpecularLight) * Pigment;
 		// AQUI TERMINA CÁLCULO DE LUMINOSIDADE BASEADO EM MATERIAIS
+		*/
+		resultcolor = (DiffuseLight + SpecularLight) * Pigment;
 	}
 }
-
-XYZ camangle	  = {{0,0,0}};
-XYZ camangledelta = {{-.005, -.011, -.017}};
-XYZ camlook       = {{0,0,0}};
-XYZ camlookdelta  = {{-.001, .005, .004}};
-XYZ campos        = {{ 0.0, -3.0, 16.0}};
 
 //double zoom = 46.0, zoomdelta = 0.99;
 double zoom = 3.0, zoomdelta = 0.99;
