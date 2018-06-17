@@ -68,16 +68,15 @@ int RayFindObstacle	(const XYZ& eye, const XYZ& dir, double& HitDist, int& HitIn
 	return HitType;
 }
 
-unsigned NumArealightVectors = 20;
 XYZ *ArealightVectors;
 void InitArealightVectors()
 {
 	if (ArealightVectors != NULL) delete ArealightVectors;
-	ArealightVectors = new XYZ[NumArealightVectors];
+	ArealightVectors = new XYZ[SHADOW_RES];
 	// To smooth out shadows cast by lightsources,
 	// I plan to approximate the lightsources with
 	// a _cloud_ of lightsources around the point
-	for(unsigned i=0; i<NumArealightVectors; ++i)
+	for(unsigned i=0; i<SHADOW_RES; ++i)
 		for(unsigned n=0; n<3; ++n)
 			ArealightVectors[i].d[n] =
 				2.0 * (rand() / double(RAND_MAX) - 0.5);
@@ -122,12 +121,12 @@ void RayTrace(XYZ& resultcolor, const XYZ& eye, const XYZ& dir, int k)
 		}
 		for(unsigned i=0; i<NumLights; i++)
 		{
-			for(unsigned j=0; j<NumArealightVectors; ++j)
+			for(unsigned j=0; j<SHADOW_RES; ++j)
 			{
 				XYZ V((Lights[i].center + ArealightVectors[j]) - HitLoc);
 				double LightDist = V.Len();
 				V.Normalize();
-				double DiffuseEffect = HitNormal.Dot(V) / (double)NumArealightVectors;
+				double DiffuseEffect = HitNormal.Dot(V) / (double)SHADOW_RES;
 				double Attenuation = (1 + pow(LightDist / LIGHT_FALLOFF, 2.0));
 				DiffuseEffect /= Attenuation;
 				if(DiffuseEffect > 1e-3)
@@ -154,9 +153,9 @@ void RayTrace(XYZ& resultcolor, const XYZ& eye, const XYZ& dir, int k)
 			while (kn--)
 			{
 				auxV = V;
-				rndFactor.Set(rand()%1000 / 1000.0,
-							  rand()%1000 / 1000.0,
-						      rand()%1000 / 1000.0);
+				rndFactor.Set(rand()%1001 / 500.0 - 1.0,
+							  rand()%1001 / 500.0 - 1.0,
+						      rand()%1001 / 500.0 - 1.0);
 				rndFactor.Normalize();
 				rndFactor *= Roughness;
 				auxV += rndFactor;
@@ -193,10 +192,10 @@ void progress()
 		estimate -= elapsed.asSeconds(); 
 
 		printf("\r                                                       "
-			   "\rCompleted: %5.1f%%; Remaining time: %d seconds",
-			   progress, unsigned(estimate));
+			   "\rCompleted: %5.1f%%; Remaining time: %5.1f seconds",
+			   progress, estimate);
 		fflush(stdout);
-		sleep(50);
+		sleep(250);
 	}
 	estimate = clock.getElapsedTime().asSeconds();
 	printf("\r                                                "

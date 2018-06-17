@@ -115,6 +115,7 @@ void consoleReader(sf::RenderWindow *window)
 					printf("Error on texture resizing!\n");
 					break;
 				}
+				texture.setSmooth(f_a > 1);
 				sprite.setTexture(texture, true);
 				float sX = W/float(rW), sY = H/float(rH);
 				printf("Nova escala: x=%f, y=%f\n", sX, sY);
@@ -125,7 +126,7 @@ void consoleReader(sf::RenderWindow *window)
 			{
 				command >> i_a;
 				if (i_a < 1) i_a = 1;
-				NumArealightVectors = i_a;
+				SHADOW_RES = i_a;
 				InitArealightVectors();
 			} else
 			if (op == "scatter")
@@ -238,7 +239,7 @@ void consoleReader(sf::RenderWindow *window)
 					double rad = Spheres[i].radius;
 					Material *mtl = &Spheres[i].mtl;
 					printf("%3d |%6.2f|%6.2f|%6.2f|%6.2f|"
-						   "%4.f|%4.f|%4.f|%5.f|%5.f\n",
+						   "%4.2f|%4.2f|%4.2f|%5.3f|%5.3f\n",
 					       i, pos[0], pos[1], pos[2], rad,
 						   mtl->color[0], mtl->color[1], mtl->color[2],
 						   mtl->roughness, mtl->shininess);
@@ -264,7 +265,7 @@ void consoleReader(sf::RenderWindow *window)
 					double offset = Planes[i].offset;
 					Material *mtl = &Planes[i].mtl;
 					printf("%3d |%7.2f|%7.2f|%7.2f|%7.2f|"
-						   "%4.f|%4.f|%4.f|%5.f|%5.f\n",
+						   "%4.2f|%4.2f|%4.2f|%5.3f|%5.3f\n",
 					       i, pos[0], pos[1], pos[2], offset,
 						   mtl->color[0], mtl->color[1], mtl->color[2],
 						   mtl->roughness, mtl->shininess);
