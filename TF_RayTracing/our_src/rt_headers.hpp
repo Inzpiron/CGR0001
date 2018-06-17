@@ -173,8 +173,6 @@ void RayTrace(XYZ& resultcolor, const XYZ& eye, const XYZ& dir, int k)
 	}
 }
 
-Matrix camrotatematrix, camlookmatrix;
-
 void progress()
 {
 	float progress, estimate;
