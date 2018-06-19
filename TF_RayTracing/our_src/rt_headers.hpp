@@ -82,6 +82,46 @@ void InitArealightVectors()
 				2.0 * (rand() / double(RAND_MAX) - 0.5);
 }
 
+XYZ refract(XYZ I, XYZ N, float ior) 
+{ 
+	float cosi = I.Dot(N);
+	// Clamp between -1 and 1
+	cosi = MIN(1.0, MAX(-1.0, cosi));
+	float etai = 1, etat = ior; 
+	XYZ n(N); 
+	if (cosi < 0) {
+		cosi = -cosi;
+	} else {
+		std::swap(etai, etat); n = -N;
+	} 
+	float eta = etai / etat; 
+	float k = 1 - eta * eta * (1 - cosi * cosi); 
+	return k < 0 ? XYZ{{0,0,0}} : I * eta + n * (eta * cosi - sqrtf(k));
+} 
+
+
+float fresnel(XYZ I, XYZ N, float ior) 
+{ 
+	float kr;
+	float cosi = MIN(1.0, MAX(-1.0, I.Dot(N)));
+	float etai = 1, etat = ior; 
+	if (cosi > 0) { std::swap(etai, etat); } 
+	// Compute sini using Snell's law
+	float sint = etai / etat * sqrtf(std::max(0.f, 1 - cosi * cosi)); 
+	// Total internal reflection
+	if (sint >= 1) { 
+		kr = 1; 
+ 	} 
+	else { 
+		float cost = sqrtf(MAX(0.f, 1 - sint * sint)); 
+		cosi = fabsf(cosi); 
+		float Rs = ((etat * cosi) - (etai * cost)) / ((etat * cosi) + (etai * cost)); 
+		float Rp = ((etai * cosi) - (etat * cost)) / ((etai * cosi) + (etat * cost)); 
+		kr = (Rs * Rs + Rp * Rp) / 2; 
+	} 
+	return kr;
+}
+
 // Shoot a camera-ray from the specified location
 // to specified location, and determine the RGB
 // color of the perception corresponding to that
@@ -104,8 +144,10 @@ void RayTrace(XYZ& resultcolor, const XYZ& eye, const XYZ& dir, int k)
 		// is actually a cloud of small lightsources around its center.
 
 		// DIFUSA
-		XYZ DiffuseLight {{0,0,0}}, SpecularLight {{0,0,0}}, Pigment;
-		double Roughness, Shininess;
+		XYZ DiffuseLight {{0,0,0}}, SpecularLight {{0,0,0}},
+		    RefractionLight {{0,0,0}}, Pigment;
+		double Roughness, Shininess, MtlRefraction, Sf = 1.0, Rf = 0.0;
+		bool MtlIsTranslucent = false;
 		switch (HitType)
 		{
 			case 0:
@@ -117,6 +159,8 @@ void RayTrace(XYZ& resultcolor, const XYZ& eye, const XYZ& dir, int k)
 				Roughness = Spheres[HitIndex].mtl.roughness;
 				Pigment = Spheres[HitIndex].mtl.color;
 				Shininess = Spheres[HitIndex].mtl.shininess;
+				MtlIsTranslucent = Spheres[HitIndex].mtl.translucent;
+				MtlRefraction = Spheres[HitIndex].mtl.refraction;
 				break;
 		}
 		for(unsigned i=0; i<NumLights; i++)
@@ -155,7 +199,7 @@ void RayTrace(XYZ& resultcolor, const XYZ& eye, const XYZ& dir, int k)
 				auxV = V;
 				rndFactor.Set(rand()%1001 / 500.0 - 1.0,
 							  rand()%1001 / 500.0 - 1.0,
-						      rand()%1001 / 500.0 - 1.0);
+							  rand()%1001 / 500.0 - 1.0);
 				rndFactor.Normalize();
 				rndFactor *= Roughness;
 				auxV += rndFactor;
@@ -169,7 +213,25 @@ void RayTrace(XYZ& resultcolor, const XYZ& eye, const XYZ& dir, int k)
 		}
 		// END SPECULAR
 
-		resultcolor = (DiffuseLight + SpecularLight) * Pigment;
+		if(MtlIsTranslucent)
+		{
+			XYZ auxColor;
+			double movRay = 0;
+			float ior = MtlRefraction;
+			XYZ V = refract(dir, HitNormal, ior);
+			if (V.Dot(HitNormal) > 0)
+				movRay = -1e-4;
+			else
+				movRay =  1e-4;
+			RayTrace(auxColor, HitLoc + V*movRay, V, k-1);
+			RefractionLight = auxColor;
+			Sf = fresnel(dir, HitNormal, ior);
+			Rf = 1.0 - Sf;
+		}
+
+		resultcolor = (DiffuseLight + 
+					   (SpecularLight * Sf + RefractionLight * Rf)
+					  ) * Pigment;
 	}
 }
 
@@ -185,14 +247,14 @@ void progress()
 		estimate = (elapsed - start).asSeconds() * (100.0/progress);
 		estimate -= elapsed.asSeconds(); 
 
-		printf("\r                                                       "
+		printf("\r													   "
 			   "\rCompleted: %5.1f%%; Remaining time: %5.1f seconds",
 			   progress, estimate);
 		fflush(stdout);
 		sleep(250);
 	}
 	estimate = clock.getElapsedTime().asSeconds();
-	printf("\r                                                "
+	printf("\r												"
 		   "\rFrame finished! Time: %.3f seconds\n", estimate);
 	fflush(stdout);
 }

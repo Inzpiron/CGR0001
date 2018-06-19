@@ -28,9 +28,9 @@ double LIGHT_FALLOFF = 34.0;
 XYZ AmbientLight  = {{  0.20, 0.20,  0.20}};
 XYZ camangle	  = {{  0.00, 0.00,  0.00}};
 XYZ camlook       = {{  0.08,-0.02,  0.00}};
-XYZ campos        = {{-10.00,12.00,-40.00}};
+XYZ campos        = {{  0.00, 9.00,-40.00}};
 Matrix camrotatematrix, camlookmatrix;
-double zoom       = 4.0;
+double zoom       = 1.0;
 double contrast   = 3.2;
 
 std::vector<Plane> Planes;
