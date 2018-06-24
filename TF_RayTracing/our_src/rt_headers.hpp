@@ -11,11 +11,6 @@
 
 /* Actual raytracing! */
 
-/**************/
-// Determine whether an object is
-// in direct eyesight on the given
-// line, and determine exactly which
-// point of the object is seen.
 int RayFindObstacle	(const XYZ& eye, const XYZ& dir, double& HitDist, int& HitIndex,
 	 XYZ& HitLoc, XYZ& HitNormal)
 {
@@ -23,9 +18,6 @@ int RayFindObstacle	(const XYZ& eye, const XYZ& dir, double& HitDist, int& HitIn
 	unsigned NumSpheres = Spheres.size();
 	unsigned NumPlanes  = Planes.size();
 	
-	// Try intersecting the ray with
-	// each object and see which one
-	// produces the closest hit.
 	int HitType = -1;
 	for(unsigned i=0; i<NumSpheres; ++i)
 	{
@@ -35,10 +27,7 @@ int RayFindObstacle	(const XYZ& eye, const XYZ& dir, double& HitDist, int& HitIn
 			D2 = dir.Squared(),
 			SQ = DV*DV
 			   - D2*(V.Squared() - r*r);
-		// Does the ray coincide
-		// with the sphere?
 		if(SQ < ERR_LOW) continue;
-		// Determine where exactly
 		double SQt = sqrt(SQ),
 			Dist = MIN(-DV-SQt,
 						-DV+SQt) / D2;
@@ -73,9 +62,6 @@ void InitArealightVectors()
 {
 	if (ArealightVectors != NULL) delete ArealightVectors;
 	ArealightVectors = new XYZ[SHADOW_RES];
-	// To smooth out shadows cast by lightsources,
-	// I plan to approximate the lightsources with
-	// a _cloud_ of lightsources around the point
 	for(unsigned i=0; i<SHADOW_RES; ++i)
 		for(unsigned n=0; n<3; ++n)
 			ArealightVectors[i].d[n] =
@@ -84,16 +70,23 @@ void InitArealightVectors()
 
 XYZ refract(XYZ I, XYZ N, float ior) 
 { 
-	float cosi = I.Dot(N);
-	// Clamp between -1 and 1
-	cosi = MIN(1.0, MAX(-1.0, cosi));
-	float etai = 1, etat = ior; 
-	XYZ n(N); 
-	if (cosi < 0) {
-		cosi = -cosi;
-	} else {
-		std::swap(etai, etat); n = -N;
-	} 
+	float cosi = MIN(1.0, MAX(-1.0, I.Dot(N)));
+	float etai = 1.0, etat = ior; 
+	XYZ n;
+
+	if(cosi > 0.0)
+	{
+	    etai = ior;
+	    etat = 1.0;
+	    n = -N;
+	}
+	else
+	{
+	    etai = 1.0;
+	    etat = ior;
+	    cosi = -cosi;
+	}
+
 	float eta = etai / etat; 
 	float k = 1 - eta * eta * (1 - cosi * cosi); 
 	return k < 0 ? XYZ{{0,0,0}} : I * eta + n * (eta * cosi - sqrtf(k));
@@ -104,16 +97,22 @@ float fresnel(XYZ I, XYZ N, float ior)
 { 
 	float kr;
 	float cosi = MIN(1.0, MAX(-1.0, I.Dot(N)));
-	float etai = 1, etat = ior; 
-	if (cosi > 0) { std::swap(etai, etat); } 
+	float etai = 1.0, etat = ior; 
+	if (cosi > 0.0)
+	{
+		etai = ior;
+		etat = 1.0;
+	} 
 	// Compute sini using Snell's law
-	float sint = etai / etat * sqrtf(std::max(0.f, 1 - cosi * cosi)); 
+	float sint = etai / etat * sqrtf(MAX(0.0, 1 - cosi * cosi));
 	// Total internal reflection
-	if (sint >= 1) { 
-		kr = 1; 
+	if (sint >= 1)
+	{ 
+		kr = 1;
  	} 
-	else { 
-		float cost = sqrtf(MAX(0.f, 1 - sint * sint)); 
+	else
+	{ 
+		float cost = sqrtf(MAX(0.0, 1 - sint * sint)); 
 		cosi = fabsf(cosi); 
 		float Rs = ((etat * cosi) - (etai * cost)) / ((etat * cosi) + (etai * cost)); 
 		float Rp = ((etai * cosi) - (etat * cost)) / ((etai * cosi) + (etat * cost)); 
@@ -122,10 +121,6 @@ float fresnel(XYZ I, XYZ N, float ior)
 	return kr;
 }
 
-// Shoot a camera-ray from the specified location
-// to specified location, and determine the RGB
-// color of the perception corresponding to that
-// location.
 void RayTrace(XYZ& resultcolor, const XYZ& eye, const XYZ& dir, int k)
 {
 	unsigned NumLights = Lights.size();
@@ -136,13 +131,6 @@ void RayTrace(XYZ& resultcolor, const XYZ& eye, const XYZ& dir, int k)
 	HitType = RayFindObstacle(eye, dir, HitDist, HitIndex, HitLoc, HitNormal);
 	if(HitType != -1)
 	{
-		// Found an obstacle. Next, find out how it is illuminated.
-		// Shoot a ray to each lightsource, and determine if there
-		// is an obstacle behind it. This is called "diffuse light".
-		// To smooth out the infinitely sharp shadows caused by
-		// infinitely small point-lightsources, assume the lightsource
-		// is actually a cloud of small lightsources around its center.
-
 		// DIFUSA
 		XYZ DiffuseLight {{0,0,0}}, SpecularLight {{0,0,0}},
 		    RefractionLight {{0,0,0}}, Pigment;
@@ -218,14 +206,15 @@ void RayTrace(XYZ& resultcolor, const XYZ& eye, const XYZ& dir, int k)
 			XYZ auxColor;
 			double movRay = 0;
 			float ior = MtlRefraction;
-			XYZ V = refract(dir, HitNormal, ior);
+			XYZ V = refract(dir, -HitNormal, ior);
+			V.Normalize();
 			if (V.Dot(HitNormal) > 0)
 				movRay = -1e-4;
 			else
 				movRay =  1e-4;
 			RayTrace(auxColor, HitLoc + V*movRay, V, k-1);
 			RefractionLight = auxColor;
-			Sf = fresnel(dir, HitNormal, ior);
+			Sf = fresnel(dir, -HitNormal, ior);
 			Rf = 1.0 - Sf;
 		}
 
@@ -247,14 +236,14 @@ void progress()
 		estimate = (elapsed - start).asSeconds() * (100.0/progress);
 		estimate -= elapsed.asSeconds(); 
 
-		printf("\r													   "
-			   "\rCompleted: %5.1f%%; Remaining time: %5.1f seconds",
+		printf("\r                                                        "
+			   "\rCompleted: %5.1f%%; Remaining: %5.1f seconds",
 			   progress, estimate);
 		fflush(stdout);
 		sleep(250);
 	}
 	estimate = clock.getElapsedTime().asSeconds();
-	printf("\r												"
+	printf("\r                                                           "
 		   "\rFrame finished! Time: %.3f seconds\n", estimate);
 	fflush(stdout);
 }

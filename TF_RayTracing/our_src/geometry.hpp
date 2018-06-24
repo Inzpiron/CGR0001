@@ -3,9 +3,6 @@
 
 #include "commons.hpp"
 
-// Declarations for scene description
-// Walls are planes. Planes have a
-// normal vector and a distance.
 struct XYZ
 {
 	double d[3];
