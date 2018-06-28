@@ -40,6 +40,7 @@ void consoleReader(sf::RenderWindow *window)
 				   "            radius r      - radius\n"
 				   "            rough h       - surface roughness\n"
 				   "            shiny s       - surface shininess\n"
+				   "            refindex      - refraction index\n"
 				   "        plane index       - Alter plane's:\n"
 				   "            normal x y z  - normal\n"
 				   "            color r g b   - color\n"
@@ -173,6 +174,11 @@ void consoleReader(sf::RenderWindow *window)
 				{
 					command >> f_a;
 					Spheres[i_a].mtl.shininess = f_a;
+				} else
+				if (op == "refindex")
+				{
+					command >> f_a;
+					Spheres[i_a].mtl.refraction = f_a;
 				}
 			} else
 			if (op == "plane")

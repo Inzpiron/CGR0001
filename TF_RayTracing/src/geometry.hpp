@@ -6,7 +6,8 @@
 struct XYZ
 {
 	double d[3];
-	// Declare operators pertinent to vectors in general:
+
+	// Operações gerais:
 	inline void Set(double a,double b,double c) { d[0]=a; d[1]=b; d[2]=c;}
 	#define do_op(o) \
 		inline void operator o##= (const XYZ& b) { for(unsigned n=0; n<3; ++n) d[n] o##= b.d[n]; } \
@@ -21,7 +22,8 @@ struct XYZ
 	double operator[] (const int a) const { if(a > 2 || a < 0) return 0; return d[a]; }
 	XYZ Pow(double b) const
 		{ XYZ tmp = {{ pow(d[0],b), pow(d[1],b), pow(d[2],b) }}; return tmp; }
-	// Operators pertinent to geometrical vectors:
+
+	// Operações geométricas:
 	inline double Dot(const XYZ& b) const
 		{ return d[0]*b.d[0] + d[1]*b.d[1] + d[2]*b.d[2]; }
 	inline double Squared() const	 { return Dot(*this); }
@@ -33,7 +35,8 @@ struct XYZ
 		double v = Dot(N);
 		*this = N * (v+v) - *this;
 	}
-	// Operators pertinent to colour vectors (RGB):
+	
+	// Operações de cores (RGB):
 	inline double Luma() const { return d[0]*0.299 + d[1]*0.587 + d[2]*0.114; }
 	void Clamp()
 	{
@@ -45,22 +48,10 @@ struct XYZ
 	}
 	void ClampWithDesaturation()
 	{
-		// If the color represented by this triplet
-		// is too bright or too dim, decrease the
-		// saturation as much as required, while keeping
-		// the luma unmodified.
 		double l = Luma(), sat = 1.0;
 		if(l > 1.0) { d[0] = d[1] = d[2] = 1.0; return; }
 		if(l < 0.0) { d[0] = d[1] = d[2] = 0.0; return; }
-		// If any component is over the bounds, calculate how
-		// much the saturation must be reduced to achieve an
-		// in-bounds value. Since the luma was verified to be
-		// in 0..1 range, a maximum reduction of saturationto
-		// 0% will always produce an in-bounds value, but
-		// usually such a drastic reduction is not necessary.
-		// Because we're only doing relative modifications,
-		// we don't need to determine the original saturation
-		// level of the pixel.
+		
 		for(int n=0; n<3; ++n)
 			if(d[n] > 1.0) sat = MIN(sat, (l-1.0) / (l-d[n]));
 			else if(d[n] < 0.0) sat = MIN(sat, l  / (l-d[n]));

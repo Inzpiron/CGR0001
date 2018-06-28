@@ -1,15 +1,11 @@
-NEWFILE = new_src/main.cpp
-OURFILE = our_src/main.cpp
+FILE = src/main.cpp
 OUT = ray
 FLAGS = -lm -fopenmp -lsfml-system -lsfml-graphics -lsfml-window -lpthread -std=c++11 -O3
 CC = g++
 
-all: our
+all: compile
 
-new: $(NEWFILE)
-	$(CC) $(NEWFILE) -o $(OUT) $(FLAGS)
-
-our: $(OLDFILE)
-	$(CC) $(OURFILE) -o $(OUT) $(FLAGS)
+compile:
+	$(CC) $(FILE) -o $(OUT) $(FLAGS)
 
 .PHONY: ALL

@@ -71,8 +71,8 @@ void InitArealightVectors()
 XYZ refract(XYZ I, XYZ N, float ior) 
 { 
 	float cosi = MIN(1.0, MAX(-1.0, I.Dot(N)));
-	float etai = 1.0, etat = ior; 
-	XYZ n;
+	float etai, etat; 
+	XYZ n = N;
 
 	if(cosi > 0.0)
 	{
@@ -87,7 +87,7 @@ XYZ refract(XYZ I, XYZ N, float ior)
 	    cosi = -cosi;
 	}
 
-	float eta = etai / etat; 
+	float eta = etai / etat;
 	float k = 1 - eta * eta * (1 - cosi * cosi); 
 	return k < 0 ? XYZ{{0,0,0}} : I * eta + n * (eta * cosi - sqrtf(k));
 } 
@@ -201,12 +201,13 @@ void RayTrace(XYZ& resultcolor, const XYZ& eye, const XYZ& dir, int k)
 		}
 		// END SPECULAR
 
+		// REFRACTION
 		if(MtlIsTranslucent)
 		{
+			HitNormal.Normalize();
 			XYZ auxColor;
 			double movRay = 0;
-			float ior = MtlRefraction;
-			XYZ V = refract(dir, -HitNormal, ior);
+			XYZ V = refract(dir, HitNormal, MtlRefraction);
 			V.Normalize();
 			if (V.Dot(HitNormal) > 0)
 				movRay = -1e-4;
@@ -214,9 +215,10 @@ void RayTrace(XYZ& resultcolor, const XYZ& eye, const XYZ& dir, int k)
 				movRay =  1e-4;
 			RayTrace(auxColor, HitLoc + V*movRay, V, k-1);
 			RefractionLight = auxColor;
-			Sf = fresnel(dir, -HitNormal, ior);
+			Sf = fresnel(dir, HitNormal, MtlRefraction);
 			Rf = 1.0 - Sf;
 		}
+		// END REFRACTION
 
 		resultcolor = (DiffuseLight + 
 					   (SpecularLight * Sf + RefractionLight * Rf)
