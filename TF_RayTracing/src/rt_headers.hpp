@@ -131,7 +131,6 @@ void RayTrace(XYZ& resultcolor, const XYZ& eye, const XYZ& dir, int k)
 	HitType = RayFindObstacle(eye, dir, HitDist, HitIndex, HitLoc, HitNormal);
 	if(HitType != -1)
 	{
-		// DIFUSA
 		XYZ DiffuseLight {{0,0,0}}, SpecularLight {{0,0,0}},
 		    RefractionLight {{0,0,0}}, Pigment;
 		double Roughness, Shininess, MtlRefraction, Sf = 1.0, Rf = 0.0;
@@ -151,6 +150,8 @@ void RayTrace(XYZ& resultcolor, const XYZ& eye, const XYZ& dir, int k)
 				MtlRefraction = Spheres[HitIndex].mtl.refraction;
 				break;
 		}
+
+		// DIRECT
 		for(unsigned i=0; i<NumLights; i++)
 		{
 			for(unsigned j=0; j<SHADOW_RES; ++j)
@@ -161,17 +162,17 @@ void RayTrace(XYZ& resultcolor, const XYZ& eye, const XYZ& dir, int k)
 				double DiffuseEffect = HitNormal.Dot(V) / (double)SHADOW_RES;
 				double Attenuation = (1 + pow(LightDist / LIGHT_FALLOFF, 2.0));
 				DiffuseEffect /= Attenuation;
-				if(DiffuseEffect > 1e-3)
+				if (DiffuseEffect > 1e-3)
 				{
 					double ShadowDist = LightDist - 1e-4;
 					XYZ a,b;
 					int q, t = RayFindObstacle(HitLoc + V*1e-4, V, ShadowDist, q, a, b);
-					if(t == -1) // No obstacle occluding the light?
+					if (t == -1)
 						DiffuseLight += Lights[i].colour * DiffuseEffect;
 				}
 			}
 		}
-		// END DIFUSA
+		// END DIRECT
 
 		// SPECULAR
 		if(k > 1)
@@ -181,18 +182,17 @@ void RayTrace(XYZ& resultcolor, const XYZ& eye, const XYZ& dir, int k)
 			int roughnessSamples = SURFACE_SAMPLES;
 			int decay = MAX(MAXTRACE - k, 0);
 			int kn = MAX(roughnessSamples - decay, 1);
-			XYZ resultColor {{0.0,0.0,0.0}}, auxColor, auxV, rndFactor;
+			XYZ resultColor {{0.0,0.0,0.0}}, auxColor, auxV;
 			while (kn--)
 			{
-				auxV = V;
-				rndFactor.Set(rand()%1001 / 500.0 - 1.0,
-							  rand()%1001 / 500.0 - 1.0,
-							  rand()%1001 / 500.0 - 1.0);
-				rndFactor.Normalize();
-				rndFactor *= Roughness;
-				auxV += rndFactor;
+				auxV.Set(rand()%1001 / 500.0 - 1.0,
+						 rand()%1001 / 500.0 - 1.0,
+						 rand()%1001 / 500.0 - 1.0);
 				auxV.Normalize();
-				RayTrace(auxColor, HitLoc + auxV*1e-4, auxV, k-1);
+				if (auxV.Dot(V) < 0)
+					auxV *= -1;
+				auxV *= Roughness;
+				RayTrace(auxColor, HitLoc + HitNormal*1e-12, V + auxV, k-1);
 				resultColor += auxColor;
 			}
 			resultColor   *= 1.0/double(roughnessSamples);
@@ -242,7 +242,7 @@ void progress()
 			   "\rCompleted: %5.1f%%; Remaining: %5.1f seconds",
 			   progress, estimate);
 		fflush(stdout);
-		sleep(250);
+		sleep(53);
 	}
 	estimate = clock.getElapsedTime().asSeconds();
 	printf("\r                                                           "

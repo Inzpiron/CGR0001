@@ -258,7 +258,7 @@ void consoleReader(sf::RenderWindow *window)
 				{
 					XYZ pos = Lights[i].center;
 					XYZ rgb = Lights[i].colour;
-					printf("%3d |%7.2f|%7.2f|%7.2f|%5.2f|%5.2f|%5.2f\n",
+					printf("%3d |%6.2f|%6.2f|%6.2f|%5.2f|%5.2f|%5.2f\n",
 						   i, pos[0], pos[1], pos[2], rgb[0], rgb[1], rgb[2]);
 				}
 			}
@@ -270,7 +270,7 @@ void consoleReader(sf::RenderWindow *window)
 					XYZ pos = Planes[i].normal;
 					double offset = Planes[i].offset;
 					Material *mtl = &Planes[i].mtl;
-					printf("%3d |%7.2f|%7.2f|%7.2f|%7.2f|"
+					printf("%3d |%6.2f|%6.2f|%6.2f|%6.2f|"
 						   "%4.2f|%4.2f|%4.2f|%5.3f|%5.3f\n",
 					       i, pos[0], pos[1], pos[2], offset,
 						   mtl->color[0], mtl->color[1], mtl->color[2],
