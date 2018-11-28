@@ -125,6 +125,8 @@ void RayTrace(XYZ& resultcolor, const XYZ& eye, const XYZ& dir, int k)
 {
 	unsigned NumLights = Lights.size();
 
+	unsigned XadrexSize = 8;
+
 	double HitDist = 1e6;
 	XYZ HitLoc, HitNormal;
 	int HitIndex, HitType;
@@ -140,6 +142,14 @@ void RayTrace(XYZ& resultcolor, const XYZ& eye, const XYZ& dir, int k)
 			case 0:
 				Roughness = Planes[HitIndex].mtl.roughness;
 				Pigment = Planes[HitIndex].mtl.color;
+				if (HitIndex == 3) {
+					XYZ pos(HitLoc);
+					if (((int)pos.d[0]/XadrexSize + (int)pos.d[2]/XadrexSize)%2) {
+						Pigment = {{0, 0, 0}};
+					} else {
+						Pigment = {{0.8, 0.8, 0.8}};
+					}
+				}
 				Shininess = Planes[HitIndex].mtl.shininess;
 				break;
 			case 1:
